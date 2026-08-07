@@ -1,26 +1,55 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import VisitNoteForm from "@/components/visits/VisitNoteForm";
+import { getVisitFormData, saveVisitNote } from "@/app/(app)/VisitNotes/actions";
+import { toast } from "sonner";
 
 export default function NewVisitNote() {
   const router = useRouter();
   const [draftId, setDraftId] = useState(null);
+  const [patients, setPatients] = useState([]);
+  const [therapists, setTherapists] = useState([]);
+  const [agencies, setAgencies] = useState([]);
 
-  const patients = [];
-  const therapists = [];
+  const loadFormData = useCallback(async () => {
+    try {
+      const data = await getVisitFormData();
+      setPatients(data.patients);
+      setTherapists(data.therapists);
+      setAgencies(data.agencies || []);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  useEffect(() => { loadFormData(); }, [loadFormData]);
 
   const handleSave = async (data) => {
-    console.log("save:", data);
-    router.push("/VisitNotes");
+    try {
+      const result = await saveVisitNote(data);
+      if (result?.success) {
+        toast.success("Visit note created");
+        router.push("/VisitNotes");
+      }
+    } catch (err) {
+      toast.error("Failed to save visit note");
+    }
   };
 
   const handleAutoSave = async (data) => {
-    console.log("save:", data);
+    try {
+      const result = await saveVisitNote({ ...data, id: draftId || data.id, status: "draft" });
+      if (result?.success && !draftId) {
+        setDraftId(result.id);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -36,7 +65,7 @@ export default function NewVisitNote() {
           <p className="text-slate-500 text-sm mt-0.5">Document a therapy visit</p>
         </div>
       </div>
-      <VisitNoteForm patients={patients} therapists={therapists} onSave={handleSave} onAutoSave={handleAutoSave} />
+      <VisitNoteForm patients={patients} therapists={therapists} agencies={agencies} onSave={handleSave} onAutoSave={handleAutoSave} />
     </div>
   );
 }

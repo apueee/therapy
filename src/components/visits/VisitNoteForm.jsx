@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useCurrentUser } from "@/components/layout/UserContext";
+import { getPatientVisits } from "@/app/(app)/VisitNotes/actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -127,11 +128,9 @@ function GoalInterventionInput({ interventions, onAdd, onRemove }) {
   );
 }
 
-export default function VisitNoteForm({ patients = [], therapists = [], onSave, onAutoSave, initial }) {
+export default function VisitNoteForm({ patients = [], therapists = [], agencies = [], onSave, onAutoSave, initial }) {
   const effectiveUser = useCurrentUser();
   const isAdmin = ["admin", "superuser"].includes(effectiveUser?.role) || ["admin", "superuser"].includes(effectiveUser?.user_type);
-
-  const agencies = [];
 
   const [form, setForm] = useState(initial ? {
     eval_treatment_goals: [{ goal: "", interventions: [], functional_status: "" }],
@@ -173,7 +172,15 @@ export default function VisitNoteForm({ patients = [], therapists = [], onSave, 
     if (!newTabs.includes(activeTab)) setActiveTab("Intake");
   }, [form.visit_type, agencyDocsOnly, form.include_nomnc]);
 
-  const patientVisits = [];
+  const [patientVisits, setPatientVisits] = useState([]);
+
+  useEffect(() => {
+    if (form.patient_id) {
+      getPatientVisits(form.patient_id).then(setPatientVisits).catch(() => {});
+    } else {
+      setPatientVisits([]);
+    }
+  }, [form.patient_id]);
 
   const [saving, setSaving] = useState(false);
   const [punchingIn, setPunchingIn] = useState(false);

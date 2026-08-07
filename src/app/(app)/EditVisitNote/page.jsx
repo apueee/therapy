@@ -1,11 +1,12 @@
 "use client";
 
-import React, { Suspense } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useCurrentUser } from "@/components/layout/UserContext";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Lock } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import VisitNoteForm from "@/components/visits/VisitNoteForm";
+import { getVisitNoteById, getVisitFormData, saveVisitNote } from "@/app/(app)/VisitNotes/actions";
 import { toast } from "sonner";
 
 function EditVisitNoteContent() {
@@ -15,20 +16,50 @@ function EditVisitNoteContent() {
   const effectiveUser = useCurrentUser();
   const isAdmin = ["admin", "superuser"].includes(effectiveUser?.role) || ["admin", "superuser"].includes(effectiveUser?.user_type);
 
-  const visit = null;
-  const isLoading = false;
+  const [visit, setVisit] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [patients, setPatients] = useState([]);
+  const [therapists, setTherapists] = useState([]);
+  const [agencies, setAgencies] = useState([]);
 
-  const patients = [];
-  const therapists = [];
+  const loadData = useCallback(async () => {
+    if (!id) return;
+    try {
+      const [noteData, formData] = await Promise.all([
+        getVisitNoteById(id),
+        getVisitFormData(),
+      ]);
+      setVisit(noteData);
+      setPatients(formData.patients);
+      setTherapists(formData.therapists);
+      setAgencies(formData.agencies || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const handleSave = async (data) => {
-    console.log("save:", data);
-    toast.success("Visit note updated successfully");
-    router.push(`/VisitNoteDetail?id=${id}`);
+    try {
+      const result = await saveVisitNote({ ...data, id });
+      if (result?.success) {
+        toast.success("Visit note updated successfully");
+        router.push(`/VisitNoteDetail?id=${id}`);
+      }
+    } catch (err) {
+      toast.error("Failed to update visit note");
+    }
   };
 
   const handleAutoSave = async (data) => {
-    console.log("save:", data);
+    try {
+      await saveVisitNote({ ...data, id, status: "draft" });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   if (isLoading) {
@@ -90,6 +121,7 @@ function EditVisitNoteContent() {
       <VisitNoteForm
         patients={patients}
         therapists={therapists}
+        agencies={agencies}
         onSave={handleSave}
         onAutoSave={handleAutoSave}
         initial={visit}

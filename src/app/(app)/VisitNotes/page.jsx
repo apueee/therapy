@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useCurrentUser } from "@/components/layout/UserContext";
+import { getVisitNotes, deleteVisitNote } from "./actions";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,16 +33,36 @@ export default function VisitNotes() {
   const effectiveUser = useCurrentUser();
   const isAdmin = ["admin", "superuser"].includes(effectiveUser?.user_type) || ["admin", "superuser"].includes(effectiveUser?.role);
 
-  const allVisits = [];
-  const isLoading = false;
+  const [allVisits, setAllVisits] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Therapists only see their own visits
+  const loadVisits = useCallback(async () => {
+    try {
+      const data = await getVisitNotes();
+      setAllVisits(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadVisits(); }, [loadVisits]);
+
   const visits = isAdmin
     ? allVisits
     : allVisits.filter(v => v.therapist_name === effectiveUser?.full_name || v.therapist_id === effectiveUser?.id);
 
   const handleDelete = async (id) => {
-    console.log("delete:", id);
+    try {
+      const result = await deleteVisitNote(id);
+      if (result?.success) {
+        toast.success("Visit note deleted");
+        loadVisits();
+      }
+    } catch (err) {
+      toast.error("Failed to delete visit note");
+    }
   };
 
   const filtered = visits.filter((v) => {

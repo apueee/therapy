@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useCurrentUser } from "@/components/layout/UserContext";
+import { getVisitNoteById, updateVisitNoteField, getPatientVisits } from "@/app/(app)/VisitNotes/actions";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -44,24 +45,55 @@ function VisitNoteDetailContent() {
 
   const router = useRouter();
 
+  const [isLoading, setIsLoading] = useState(true);
+  const [visitRaw, setVisitRaw] = useState(null);
+  const [patient, setPatient] = useState(null);
+  const [allVisits, setAllVisits] = useState([]);
+
+  const loadVisit = useCallback(async () => {
+    if (!id) return;
+    try {
+      const data = await getVisitNoteById(id);
+      setVisitRaw(data);
+      if (data?.patient_id) {
+        const pVisits = await getPatientVisits(data.patient_id);
+        setAllVisits(pVisits);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => { loadVisit(); }, [loadVisit]);
+
+  const visit = visitData || visitRaw;
+
   const handleUpdateVisitType = async (newType) => {
-    console.log("save:", { id, visit_type: newType });
-    setEditingVisitType(false);
-    toast.success("Visit type updated");
+    try {
+      const result = await updateVisitNoteField(id, "visit_type", newType);
+      if (result?.success) {
+        setVisitData((prev) => ({ ...(prev || visit), visit_type: newType }));
+        setEditingVisitType(false);
+        toast.success("Visit type updated");
+      }
+    } catch (err) {
+      toast.error("Failed to update visit type");
+    }
   };
 
   const handleUnlock = async () => {
-    console.log("save:", { id, status: "draft" });
-    toast.success("Visit note unlocked and returned to draft status");
+    try {
+      const result = await updateVisitNoteField(id, "status", "draft");
+      if (result?.success) {
+        setVisitData((prev) => ({ ...(prev || visit), status: "draft" }));
+        toast.success("Visit note unlocked and returned to draft status");
+      }
+    } catch (err) {
+      toast.error("Failed to unlock visit note");
+    }
   };
-
-  const isLoading = false;
-  const visitRaw = null;
-  const visit = visitData || visitRaw;
-
-  const patient = null;
-
-  const allVisits = [];
 
   const handleDownloadPDF = async () => {
     try {
