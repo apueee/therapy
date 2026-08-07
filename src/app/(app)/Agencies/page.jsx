@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { getAgencies, createAgency, updateAgency, deleteAgency } from "./actions";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,21 +23,58 @@ export default function Agencies() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
 
-  const agencies = [];
-  const isLoading = false;
+  const [agencies, setAgencies] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadAgencies = useCallback(async () => {
+    try {
+      const data = await getAgencies();
+      setAgencies(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadAgencies(); }, [loadAgencies]);
 
   const handleCreate = async (data) => {
-    console.log("save:", data);
-    setFormOpen(false);
+    try {
+      const result = await createAgency(data);
+      if (result?.success) {
+        toast.success("Agency created");
+        setFormOpen(false);
+        loadAgencies();
+      }
+    } catch (err) {
+      toast.error("Failed to create agency");
+    }
   };
 
   const handleUpdate = async ({ id, data }) => {
-    console.log("save:", { id, data });
-    setEditing(null);
+    try {
+      const result = await updateAgency(id, data);
+      if (result?.success) {
+        toast.success("Agency updated");
+        setEditing(null);
+        loadAgencies();
+      }
+    } catch (err) {
+      toast.error("Failed to update agency");
+    }
   };
 
   const handleDelete = async (id) => {
-    console.log("save:", { delete: id });
+    try {
+      const result = await deleteAgency(id);
+      if (result?.success) {
+        toast.success("Agency deleted");
+        loadAgencies();
+      }
+    } catch (err) {
+      toast.error("Failed to delete agency");
+    }
   };
 
   const filtered = agencies.filter((a) =>
