@@ -1,16 +1,64 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useCurrentUser } from "@/components/layout/UserContext";
+import { getTimeLogs, clockIn, clockOut } from "@/app/(app)/MyLabor/actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, LogIn, LogOut, Timer } from "lucide-react";
+import { toast } from "sonner";
 
 export default function ClockInOut() {
+  const currentUser = useCurrentUser();
   const [openShift, setOpenShift] = useState(null);
   const [elapsed, setElapsed] = useState(0);
-  const logs = [];
-  const totalMinutesToday = 0;
+  const [logs, setLogs] = useState([]);
+
+  const loadLogs = useCallback(async () => {
+    if (!currentUser?.email) return;
+    try {
+      const data = await getTimeLogs(currentUser.email);
+      const today = new Date().toISOString().split("T")[0];
+      const todayLogs = data.filter(l => l.clock_in?.startsWith(today));
+      setLogs(todayLogs);
+      const open = todayLogs.find(l => !l.clock_out);
+      setOpenShift(open || null);
+    } catch (err) {
+      console.error(err);
+    }
+  }, [currentUser?.email]);
+
+  useEffect(() => { loadLogs(); }, [loadLogs]);
+
+  useEffect(() => {
+    if (!openShift) return;
+    const timer = setInterval(() => {
+      setElapsed(Math.round((Date.now() - new Date(openShift.clock_in).getTime()) / 60000));
+    }, 30000);
+    setElapsed(Math.round((Date.now() - new Date(openShift.clock_in).getTime()) / 60000));
+    return () => clearInterval(timer);
+  }, [openShift]);
+
+  const handleClockIn = async () => {
+    try {
+      await clockIn(currentUser?.id || "", currentUser?.full_name || "", currentUser?.email || "");
+      toast.success("Clocked in");
+      loadLogs();
+    } catch (err) { toast.error("Failed to clock in"); }
+  };
+
+  const handleClockOut = async () => {
+    if (!openShift) return;
+    try {
+      await clockOut(openShift.id);
+      toast.success("Clocked out");
+      setOpenShift(null);
+      loadLogs();
+    } catch (err) { toast.error("Failed to clock out"); }
+  };
+
+  const totalMinutesToday = logs.filter(l => l.clock_out).reduce((sum, l) => sum + (l.duration_minutes || 0), 0);
 
   const formatDuration = (mins) => {
     const h = Math.floor(mins / 60);
@@ -48,12 +96,12 @@ export default function ClockInOut() {
               </Badge>
             )}
             {openShift ? (
-              <Button className="bg-red-500 hover:bg-red-600 gap-2">
+              <Button className="bg-red-500 hover:bg-red-600 gap-2" onClick={handleClockOut}>
                 <LogOut className="w-4 h-4" />
                 Clock Out
               </Button>
             ) : (
-              <Button className="bg-teal-600 hover:bg-teal-700 gap-2">
+              <Button className="bg-teal-600 hover:bg-teal-700 gap-2" onClick={handleClockIn}>
                 <LogIn className="w-4 h-4" />
                 Clock In
               </Button>

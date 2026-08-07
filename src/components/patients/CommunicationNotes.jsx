@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { getCommunicationNotes, addCommunicationNote } from "./communication-actions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,18 +21,39 @@ export default function CommunicationNotes({ patientId, patientName, coordinator
   const [note, setNote] = useState("");
   const [noteType, setNoteType] = useState("general");
   const [submitting, setSubmitting] = useState(false);
+  const [notes, setNotes] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const notes = [];
-  const isLoading = false;
+  const loadNotes = useCallback(async () => {
+    if (!patientId) return;
+    try {
+      const data = await getCommunicationNotes(patientId);
+      setNotes(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [patientId]);
+
+  useEffect(() => { loadNotes(); }, [loadNotes]);
 
   const handleSubmit = async () => {
     if (!note.trim()) return;
     setSubmitting(true);
     try {
-      // TODO: Replace with real API call
-      setNote("");
-      setNoteType("general");
-      toast.success("Note added successfully.");
+      const result = await addCommunicationNote({
+        patientId,
+        patientName: patientName || "",
+        note,
+        noteType,
+      });
+      if (result?.success) {
+        setNote("");
+        setNoteType("general");
+        toast.success("Note added successfully.");
+        loadNotes();
+      }
     } catch (err) {
       toast.error("Failed to add note.");
     } finally {
