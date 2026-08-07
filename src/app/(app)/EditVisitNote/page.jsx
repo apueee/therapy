@@ -1,6 +1,7 @@
 "use client";
 
 import React, { Suspense } from "react";
+import { useCurrentUser } from "@/components/layout/UserContext";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Lock } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -11,7 +12,7 @@ function EditVisitNoteContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
   const router = useRouter();
-  const effectiveUser = { role: "therapist", user_type: "therapist", full_name: "User", email: "user@example.com" };
+  const effectiveUser = useCurrentUser();
   const isAdmin = ["admin", "superuser"].includes(effectiveUser?.role) || ["admin", "superuser"].includes(effectiveUser?.user_type);
 
   const visit = null;

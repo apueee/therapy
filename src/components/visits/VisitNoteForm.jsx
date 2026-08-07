@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useCurrentUser } from "@/components/layout/UserContext";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -127,7 +128,7 @@ function GoalInterventionInput({ interventions, onAdd, onRemove }) {
 }
 
 export default function VisitNoteForm({ patients = [], therapists = [], onSave, onAutoSave, initial }) {
-  const effectiveUser = { role: "therapist", user_type: "therapist" };
+  const effectiveUser = useCurrentUser();
   const isAdmin = ["admin", "superuser"].includes(effectiveUser?.role) || ["admin", "superuser"].includes(effectiveUser?.user_type);
 
   const agencies = [];

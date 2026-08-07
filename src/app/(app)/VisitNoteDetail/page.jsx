@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, Suspense } from "react";
+import { useCurrentUser } from "@/components/layout/UserContext";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -38,7 +39,7 @@ function VisitNoteDetailContent() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [visitData, setVisitData] = useState(null);
   const [editingVisitType, setEditingVisitType] = useState(false);
-  const effectiveUser = { role: "therapist", user_type: "therapist", full_name: "User", email: "user@example.com" };
+  const effectiveUser = useCurrentUser();
   const isAdmin = ["admin", "superuser"].includes(effectiveUser?.role) || ["admin", "superuser"].includes(effectiveUser?.user_type);
 
   const router = useRouter();
