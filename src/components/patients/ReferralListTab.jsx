@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { getReferrals } from "./referral-actions";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -16,9 +17,21 @@ const actionColors = {
 
 export default function ReferralListTab({ onEdit }) {
   const [search, setSearch] = useState("");
+  const [referrals, setReferrals] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const referrals = [];
-  const isLoading = false;
+  const loadReferrals = useCallback(async () => {
+    try {
+      const data = await getReferrals();
+      setReferrals(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadReferrals(); }, [loadReferrals]);
 
   const filtered = referrals.filter((r) =>
     `${r.first_name} ${r.last_name} ${r.agency || ""} ${r.insurance || ""}`.toLowerCase().includes(search.toLowerCase())

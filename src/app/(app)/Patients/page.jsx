@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useCurrentUser } from "@/components/layout/UserContext";
 import { getPatients, createPatient, updatePatient } from "./actions";
+import { createReferral } from "@/components/patients/referral-actions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -152,31 +153,34 @@ export default function Patients() {
         (data.date_of_birth ? p.date_of_birth === data.date_of_birth : true)
     );
 
-  // Log referral record
   const logReferral = async (data, sourceType, patientAction, patientId) => {
-    console.log("save:", {
-      first_name: data.first_name,
-      last_name: data.last_name,
-      date_of_birth: data.date_of_birth,
-      phone: data.phone,
-      referral_date: data.referral_date || new Date().toISOString().split("T")[0],
-      referral_source: data.referral_source,
-      primary_diagnosis: data.primary_diagnosis,
-      diagnoses: data.diagnoses,
-      therapy_types: data.therapy_types,
-      insurance: data.insurance,
-      agency: data.agency,
-      physician_name: data.physician_name,
-      physician_phone: data.physician_phone,
-      cert_period_start: data.cert_period_start,
-      cert_period_end: data.cert_period_end,
-      authorization_number: data.authorization_number,
-      authorized_visits: data.authorized_visits ? parseInt(data.authorized_visits) : null,
-      notes: data.notes,
-      source_type: sourceType,
-      patient_id: patientId,
-      patient_action: patientAction,
-    });
+    try {
+      await createReferral({
+        first_name: data.first_name,
+        last_name: data.last_name,
+        date_of_birth: data.date_of_birth,
+        phone: data.phone,
+        referral_date: data.referral_date || new Date().toISOString().split("T")[0],
+        referral_source: data.referral_source,
+        primary_diagnosis: data.primary_diagnosis,
+        diagnoses: data.diagnoses,
+        therapy_types: data.therapy_types,
+        insurance: data.insurance,
+        agency: data.agency,
+        physician_name: data.physician_name,
+        physician_phone: data.physician_phone,
+        cert_period_start: data.cert_period_start,
+        cert_period_end: data.cert_period_end,
+        authorization_number: data.authorization_number,
+        authorized_visits: data.authorized_visits ? parseInt(data.authorized_visits) : null,
+        notes: data.notes,
+        source_type: sourceType,
+        patient_id: patientId,
+        patient_action: patientAction,
+      });
+    } catch (err) {
+      console.error("Failed to log referral:", err);
+    }
   };
 
   // Handle manual referral form save — always creates or updates patient

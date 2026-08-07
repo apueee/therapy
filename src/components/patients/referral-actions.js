@@ -1,0 +1,89 @@
+"use server";
+
+import { prisma } from "@/lib/db";
+import { requireAuth, requireRole } from "@/lib/auth/session";
+import { logAudit } from "@/lib/audit";
+import { headers } from "next/headers";
+import { getClientIp } from "@/lib/audit/logger";
+
+export async function getReferrals() {
+  await requireAuth();
+
+  const referrals = await prisma.referral.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+
+  return referrals.map(r => {
+    const cd = r.clinicalData || {};
+    return {
+      id: r.id,
+      first_name: r.firstName,
+      last_name: r.lastName,
+      date_of_birth: r.dateOfBirth,
+      phone: r.phone,
+      referral_date: r.referralDate,
+      referral_source: cd.referralSource || null,
+      primary_diagnosis: cd.primaryDiagnosis || null,
+      diagnoses: cd.diagnoses || [],
+      therapy_types: cd.therapyTypes || [],
+      insurance: cd.insurance || null,
+      agency: cd.agency || null,
+      physician_name: cd.physicianName || null,
+      physician_phone: cd.physicianPhone || null,
+      authorization_number: cd.authorizationNumber || null,
+      authorized_visits: cd.authorizedVisits || null,
+      cert_period_start: cd.certPeriodStart || null,
+      cert_period_end: cd.certPeriodEnd || null,
+      notes: cd.notes || null,
+      source_type: r.sourceType?.toLowerCase(),
+      patient_id: r.patientId,
+      patient_action: r.patientAction?.toLowerCase(),
+      created_at: r.createdAt,
+    };
+  });
+}
+
+export async function createReferral(data) {
+  const user = await requireRole("SUPERUSER", "ADMIN", "COORDINATOR");
+
+  const referral = await prisma.referral.create({
+    data: {
+      firstName: data.first_name,
+      lastName: data.last_name,
+      dateOfBirth: data.date_of_birth ? new Date(data.date_of_birth) : null,
+      phone: data.phone || null,
+      referralDate: data.referral_date ? new Date(data.referral_date) : null,
+      sourceType: (data.source_type || "manual").toUpperCase(),
+      patientId: data.patient_id || null,
+      patientAction: data.patient_action ? data.patient_action.toUpperCase() : null,
+      clinicalData: {
+        referralSource: data.referral_source || null,
+        primaryDiagnosis: data.primary_diagnosis || null,
+        diagnoses: data.diagnoses || [],
+        therapyTypes: data.therapy_types || [],
+        insurance: data.insurance || null,
+        agency: data.agency || null,
+        physicianName: data.physician_name || null,
+        physicianPhone: data.physician_phone || null,
+        authorizationNumber: data.authorization_number || null,
+        authorizedVisits: data.authorized_visits || null,
+        certPeriodStart: data.cert_period_start || null,
+        certPeriodEnd: data.cert_period_end || null,
+        notes: data.notes || null,
+      },
+    },
+  });
+
+  const h = await headers();
+  await logAudit({
+    user,
+    action: "CREATE",
+    resourceType: "Referral",
+    resourceId: referral.id,
+    resourceLabel: `${data.first_name} ${data.last_name}`,
+    details: `Referral logged via ${data.source_type || "manual"}`,
+    ipAddress: getClientIp(h),
+  });
+
+  return { success: true, id: referral.id };
+}
