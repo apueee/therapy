@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { getAuditLogs } from "./actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -20,9 +21,21 @@ const actionColors = {
 
 export default function AuditLogs() {
   const [search, setSearch] = useState("");
+  const [logs, setLogs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const logs = [];
-  const isLoading = false;
+  const loadLogs = useCallback(async () => {
+    try {
+      const data = await getAuditLogs();
+      setLogs(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadLogs(); }, [loadLogs]);
 
   const filtered = logs.filter(l => {
     const q = search.toLowerCase();
