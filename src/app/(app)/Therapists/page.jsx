@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { getTherapists, createTherapist, updateTherapist, deleteTherapist } from "./actions";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -23,19 +25,58 @@ export default function Therapists() {
   const [filterDiscipline, setFilterDiscipline] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
 
-  const therapists = [];
-  const isLoading = false;
+  const [therapists, setTherapists] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadTherapists = useCallback(async () => {
+    try {
+      const data = await getTherapists();
+      setTherapists(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadTherapists(); }, [loadTherapists]);
 
   const handleCreate = async (d) => {
-    console.log("save:", d);
-    setFormOpen(false);
+    try {
+      const result = await createTherapist(d);
+      if (result?.success) {
+        toast.success("Therapist created");
+        setFormOpen(false);
+        loadTherapists();
+      }
+    } catch (err) {
+      toast.error("Failed to create therapist");
+    }
   };
+
   const handleUpdate = async (d) => {
-    console.log("save:", { id: editing?.id, data: d });
-    setEditing(null);
+    try {
+      const result = await updateTherapist(editing.id, d);
+      if (result?.success) {
+        toast.success("Therapist updated");
+        setEditing(null);
+        loadTherapists();
+      }
+    } catch (err) {
+      toast.error("Failed to update therapist");
+    }
   };
+
   const handleDelete = async (id) => {
-    console.log("save:", id);
+    try {
+      const result = await deleteTherapist(id);
+      if (result?.success) {
+        toast.success("Therapist deleted");
+        loadTherapists();
+      }
+    } catch (err) {
+      toast.error("Failed to delete therapist");
+    }
   };
 
   const filtered = therapists.filter((t) => {

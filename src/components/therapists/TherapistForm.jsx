@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useCurrentUser } from "@/components/layout/UserContext";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -36,8 +37,7 @@ export default function TherapistForm({ open, onClose, onSave, initial }) {
   const [createUser, setCreateUser] = useState(false);
   const [inviteStatus, setInviteStatus] = useState(null); // null | 'success' | 'error'
 
-  // Mock currentUser
-  const currentUser = { user_type: "admin", role: "admin", full_name: "Admin User" };
+  const currentUser = useCurrentUser();
   const isHRorAdmin = ["hr", "admin", "superuser"].includes(currentUser?.user_type) || ["admin", "superuser"].includes(currentUser?.role);
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
