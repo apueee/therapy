@@ -1,8 +1,9 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { getPatientById } from "@/app/(app)/Patients/actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,10 +36,24 @@ function PatientDetail() {
   const patientId = searchParams.get("id");
   const [showCommNotes, setShowCommNotes] = useState(false);
 
-  const patient = null;
+  const [patient, setPatient] = useState(null);
+  const [loadingPatient, setLoadingPatient] = useState(true);
   const visitNotes = [];
-  const loadingPatient = false;
   const loadingVisits = false;
+
+  const loadPatient = useCallback(async () => {
+    if (!patientId) { setLoadingPatient(false); return; }
+    try {
+      const data = await getPatientById(patientId);
+      setPatient(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingPatient(false);
+    }
+  }, [patientId]);
+
+  useEffect(() => { loadPatient(); }, [loadPatient]);
 
   if (loadingPatient) {
     return (

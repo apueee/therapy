@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useCurrentUser } from "@/components/layout/UserContext";
+import { getPatients, createPatient, updatePatient } from "./actions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,17 +34,28 @@ export default function Patients() {
   const [activeTab, setActiveTab] = useState("list");
   const [editReferralPatientId, setEditReferralPatientId] = useState(null);
 
-  const currentUser = { role: "therapist", user_type: "therapist", full_name: "User", email: "user@example.com" };
+  const currentUser = useCurrentUser();
+  const [allPatients, setAllPatients] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const isAdmin = ["admin", "superuser", "coordinator"].includes(currentUser?.user_type) || ["admin", "superuser", "coordinator"].includes(currentUser?.role);
   const isTherapist = !isAdmin;
 
-  const allPatients = [];
-  const isLoading = false;
-
   const visits = [];
-
   const assignments = [];
+
+  const loadPatients = useCallback(async () => {
+    try {
+      const data = await getPatients();
+      setAllPatients(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadPatients(); }, [loadPatients]);
 
   const patients = React.useMemo(() => {
     if (isTherapist) {
@@ -55,8 +68,33 @@ export default function Patients() {
     return allPatients;
   }, [allPatients, visits, assignments, currentUser]);
 
-  const handleCreate = async (d) => { console.log("save:", d); setFormOpen(false); setEditing(null); };
-  const handleUpdate = async ({ id, data }) => { console.log("save:", { id, data }); setEditing(null); };
+  const handleCreate = async (d) => {
+    try {
+      const result = await createPatient(d);
+      if (result?.success) {
+        toast.success("Patient created");
+        setFormOpen(false);
+        setEditing(null);
+        loadPatients();
+        return result;
+      }
+    } catch (err) {
+      toast.error("Failed to create patient");
+    }
+  };
+
+  const handleUpdate = async ({ id, data }) => {
+    try {
+      const result = await updatePatient(id, data);
+      if (result?.success) {
+        toast.success("Patient updated");
+        setEditing(null);
+        loadPatients();
+      }
+    } catch (err) {
+      toast.error("Failed to update patient");
+    }
+  };
 
 
   const filtered = patients.filter((p) => {

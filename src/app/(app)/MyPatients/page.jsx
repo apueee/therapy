@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useCurrentUser } from "@/components/layout/UserContext";
+import { getPatients } from "@/app/(app)/Patients/actions";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,16 +18,26 @@ const statusBadge = {
 
 export default function MyPatients() {
   const [search, setSearch] = useState("");
-  const effectiveUser = { role: "therapist", user_type: "therapist", full_name: "User", email: "user@example.com" };
+  const [allPatients, setAllPatients] = useState([]);
+  const [loadingPatients, setLoadingPatients] = useState(true);
+  const effectiveUser = useCurrentUser();
 
   const allTherapists = [];
-
-  const allPatients = [];
-  const loadingPatients = false;
-
   const visits = [];
-
   const assignments = [];
+
+  const loadPatients = useCallback(async () => {
+    try {
+      const data = await getPatients();
+      setAllPatients(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingPatients(false);
+    }
+  }, []);
+
+  useEffect(() => { loadPatients(); }, [loadPatients]);
 
   const name = effectiveUser?.full_name;
   const uid = effectiveUser?.id;
