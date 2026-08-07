@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useCurrentUser } from "@/components/layout/UserContext";
+import { getDocuments, createDocument, updateDocument, deleteDocument } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +14,7 @@ import { Plus, FileText, Trash2, Eye, Upload, ToggleLeft, ToggleRight, Pencil } 
 import { toast } from "sonner";
 
 export default function DocumentLibrary() {
-  const effectiveUser = { role: "therapist", user_type: "therapist", full_name: "User", email: "user@example.com" };
+  const effectiveUser = useCurrentUser();
   const isAdmin = ["admin", "superuser"].includes(effectiveUser?.role) || ["admin", "superuser"].includes(effectiveUser?.user_type);
 
   const [showForm, setShowForm] = useState(false);
@@ -20,13 +22,40 @@ export default function DocumentLibrary() {
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ name: "", description: "", category: "", file_url: "", file_name: "" });
+  const [documents, setDocuments] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const documents = [];
-  const isLoading = false;
+  const loadDocuments = useCallback(async () => {
+    try {
+      const data = await getDocuments();
+      setDocuments(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  const handleCreate = async (data) => { console.log("save:", data); toast.success("Document added"); resetForm(); };
-  const handleUpdate = async ({ id, data }) => { console.log("save:", { id, data }); toast.success("Document updated"); resetForm(); };
-  const handleDelete = async (id) => { console.log("save:", id); toast.success("Document deleted"); };
+  useEffect(() => { loadDocuments(); }, [loadDocuments]);
+
+  const handleCreate = async (data) => {
+    try {
+      const result = await createDocument(data);
+      if (result?.success) { toast.success("Document added"); resetForm(); loadDocuments(); }
+    } catch (err) { toast.error("Failed to add document"); }
+  };
+  const handleUpdate = async ({ id, data }) => {
+    try {
+      const result = await updateDocument(id, data);
+      if (result?.success) { toast.success("Document updated"); resetForm(); loadDocuments(); }
+    } catch (err) { toast.error("Failed to update document"); }
+  };
+  const handleDelete = async (id) => {
+    try {
+      const result = await deleteDocument(id);
+      if (result?.success) { toast.success("Document deleted"); loadDocuments(); }
+    } catch (err) { toast.error("Failed to delete document"); }
+  };
 
   const resetForm = () => {
     setForm({ name: "", description: "", category: "", file_url: "", file_name: "" });

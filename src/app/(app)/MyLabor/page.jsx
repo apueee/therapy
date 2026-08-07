@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useCurrentUser } from "@/components/layout/UserContext";
+import { getTimeLogs } from "./actions";
 import ClockInOut from "@/components/coordinator/ClockInOut";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,13 +37,26 @@ function ShiftRow({ log }) {
 }
 
 export default function MyLabor() {
-  const effectiveUser = { role: "therapist", user_type: "therapist", full_name: "User", email: "user@example.com" };
-  const [view, setView] = useState("weekly"); // "weekly" | "monthly"
+  const effectiveUser = useCurrentUser();
+  const [view, setView] = useState("weekly");
   const [weekOffset, setWeekOffset] = useState(0);
   const [monthOffset, setMonthOffset] = useState(0);
+  const [allLogs, setAllLogs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const allLogs = [];
-  const isLoading = false;
+  const loadLogs = useCallback(async () => {
+    if (!effectiveUser?.email) return;
+    try {
+      const data = await getTimeLogs(effectiveUser.email);
+      setAllLogs(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [effectiveUser?.email]);
+
+  useEffect(() => { loadLogs(); }, [loadLogs]);
 
   const now = new Date();
 

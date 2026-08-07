@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useCurrentUser } from "@/components/layout/UserContext";
+import { getTherapists, updateTherapist } from "@/app/(app)/Therapists/actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,23 +25,40 @@ const FILE_FIELDS = [
 ];
 
 export default function MyProfile() {
-  const effectiveUser = { role: "therapist", user_type: "therapist", full_name: "User", email: "user@example.com" };
+  const effectiveUser = useCurrentUser();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(null);
   const [uploading, setUploading] = useState({});
+  const [therapists, setTherapists] = useState([]);
 
   const isAdmin = ["admin", "superuser"].includes(effectiveUser?.role) || ["admin", "superuser"].includes(effectiveUser?.user_type);
 
-  const therapists = [];
+  const loadTherapists = useCallback(async () => {
+    try {
+      const data = await getTherapists();
+      setTherapists(data);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  useEffect(() => { loadTherapists(); }, [loadTherapists]);
 
   const therapist = therapists.find(
     t => t.email === effectiveUser?.email || t.full_name === effectiveUser?.full_name
   );
 
   const handleUpdate = async ({ id, data }) => {
-    console.log("save:", { id, data });
-    setEditing(false);
-    toast.success("Profile updated");
+    try {
+      const result = await updateTherapist(id, data);
+      if (result?.success) {
+        setEditing(false);
+        toast.success("Profile updated");
+        loadTherapists();
+      }
+    } catch (err) {
+      toast.error("Failed to update profile");
+    }
   };
 
   const startEdit = () => {
