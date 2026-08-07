@@ -1,6 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useCurrentUser } from "@/components/layout/UserContext";
+import { getCompanyInfo, saveCompanyInfo } from "./actions";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, Phone, Mail, MapPin, Edit, Save, X, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,12 +13,11 @@ import { Textarea } from "@/components/ui/textarea";
 export default function CompanyInformation() {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
+  const [companyInfo, setCompanyInfo] = useState(null);
 
-  const effectiveUser = { role: "therapist", user_type: "therapist" };
+  const effectiveUser = useCurrentUser();
 
-  const companyInfo = null;
-
-  const info = companyInfo || {
+  const defaults = {
     company_name: 'TherapyDocs',
     logo_url: '',
     tagline: 'Contract Therapy Services',
@@ -29,28 +31,37 @@ export default function CompanyInformation() {
     weekend_hours: 'Closed',
   };
 
+  const loadInfo = useCallback(async () => {
+    try {
+      const data = await getCompanyInfo();
+      if (data) setCompanyInfo(data);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  useEffect(() => { loadInfo(); }, [loadInfo]);
+
+  const info = companyInfo || defaults;
+
   const canEdit = effectiveUser?.role === 'superuser' || effectiveUser?.user_type === 'superuser';
 
   const handleEdit = () => {
-    setFormData(companyInfo || {
-      company_name: 'TherapyDocs',
-      logo_url: '',
-      tagline: 'Contract Therapy Services',
-      description: 'Contract Therapy Services providing comprehensive therapy documentation solutions for healthcare professionals. We specialize in Physical Therapy, Occupational Therapy, and Speech Therapy services.',
-      phone: '(555) 123-4567',
-      email: 'info@therapydocs.com',
-      address_line1: '123 Healthcare Drive',
-      address_line2: 'Medical Plaza, Suite 200',
-      address_line3: 'City, State 12345',
-      monday_friday_hours: '8:00 AM - 6:00 PM',
-      weekend_hours: 'Closed',
-    });
+    setFormData(companyInfo || defaults);
     setIsEditing(true);
   };
 
-  const handleSave = () => {
-    console.log("Save company info:", formData);
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      const result = await saveCompanyInfo(formData);
+      if (result?.success) {
+        toast.success("Company info saved");
+        setIsEditing(false);
+        loadInfo();
+      }
+    } catch (err) {
+      toast.error("Failed to save company info");
+    }
   };
 
   const handleCancel = () => {

@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useCurrentUser } from "@/components/layout/UserContext";
+import { getCompanyInfo, saveMenuPermissions } from "@/app/(app)/CompanyInformation/actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -52,28 +54,40 @@ const DEFAULT_PERMISSIONS = {
 };
 
 export default function CompanySettings() {
-  const effectiveUser = { role: "therapist", user_type: "therapist", full_name: "User", email: "user@example.com" };
+  const effectiveUser = useCurrentUser();
   const isSuperuser = effectiveUser?.role === "superuser" || effectiveUser?.user_type === "superuser";
 
   const [permissions, setPermissions] = useState(null);
   const [dirty, setDirty] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const companyInfo = null;
-  const isLoading = false;
-
-  useEffect(() => {
-    if (companyInfo !== undefined && permissions === null) {
-      setPermissions(companyInfo?.menu_permissions || DEFAULT_PERMISSIONS);
+  const loadSettings = useCallback(async () => {
+    try {
+      const data = await getCompanyInfo();
+      setPermissions(data?.menu_permissions || DEFAULT_PERMISSIONS);
+    } catch (err) {
+      setPermissions(DEFAULT_PERMISSIONS);
+    } finally {
+      setIsLoading(false);
     }
-  }, [companyInfo]);
+  }, []);
+
+  useEffect(() => { loadSettings(); }, [loadSettings]);
 
   const [saving, setSaving] = useState(false);
   const handleSave = async () => {
     setSaving(true);
-    console.log("save:", { companyInfo, permissions });
-    toast.success("Menu permissions saved. Changes apply on next page load.");
-    setDirty(false);
-    setSaving(false);
+    try {
+      const result = await saveMenuPermissions(permissions);
+      if (result?.success) {
+        toast.success("Menu permissions saved. Changes apply on next page load.");
+        setDirty(false);
+      }
+    } catch (err) {
+      toast.error("Failed to save permissions");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const toggle = (role, pageKey) => {
