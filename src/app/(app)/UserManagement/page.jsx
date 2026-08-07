@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { getUsers, inviteUser, updateUser, syncTherapistsToUsers } from "./actions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -27,29 +28,52 @@ export default function UserManagement() {
   const [inviteForm, setInviteForm] = useState({ email: "", user_type: "therapist" });
   const [editForm, setEditForm] = useState({});
   const [syncing, setSyncing] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const users = [];
-  const isLoading = false;
+  const loadUsers = useCallback(async () => {
+    try {
+      const data = await getUsers();
+      setUsers(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadUsers(); }, [loadUsers]);
 
   const handleUpdateUser = async ({ id, data }) => {
-    console.log("save:", { id, data });
+    const result = await updateUser({ id, data });
+    if (result.error) { toast.error(result.error); return; }
+    toast.success("User updated");
     setEditOpen(false);
     setEditingUser(null);
+    loadUsers();
   };
 
   const handleSync = async () => {
     setSyncing(true);
-    console.log("save:", "syncTherapistsToUsers");
-    toast.success("Sync complete");
-    setSyncing(false);
+    try {
+      const result = await syncTherapistsToUsers();
+      toast.success(`Sync complete: ${result.created} created, ${result.linked} linked`);
+      loadUsers();
+    } catch (err) {
+      toast.error("Sync failed");
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const handleInvite = async () => {
     try {
-      console.log("save:", { email: inviteForm.email, user_type: inviteForm.user_type });
+      const result = await inviteUser({ email: inviteForm.email, userType: inviteForm.user_type });
+      if (result.error) { toast.error(result.error); return; }
       setInviteOpen(false);
       setInviteForm({ email: "", user_type: "therapist" });
       toast.success(`Invite sent to ${inviteForm.email}`);
+      loadUsers();
     } catch (err) {
       console.error(err);
       toast.error("Failed to send invite: " + (err?.message || "Unknown error"));
