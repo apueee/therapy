@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useCurrentUser } from "@/components/layout/UserContext";
+import { getMyTasks, updateTaskStatus } from "@/app/(app)/TaskAssignment/actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,16 +23,34 @@ const statusIcon = {
 };
 
 export default function MyTasks() {
-  const effectiveUser = { role: "therapist", user_type: "therapist", full_name: "User", email: "user@example.com" };
+  const effectiveUser = useCurrentUser();
   const [notes, setNotes] = useState({});
   const [expandedId, setExpandedId] = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const tasks = [];
-  const isLoading = false;
+  const loadTasks = useCallback(async () => {
+    if (!effectiveUser?.email) return;
+    try {
+      const data = await getMyTasks(effectiveUser.email);
+      setTasks(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [effectiveUser?.email]);
+
+  useEffect(() => { loadTasks(); }, [loadTasks]);
 
   const handleUpdate = async ({ id, data }) => {
-    console.log("save:", { id, data });
-    toast.success("Task updated");
+    try {
+      await updateTaskStatus(id, data.status);
+      toast.success("Task updated");
+      loadTasks();
+    } catch (err) {
+      toast.error("Failed to update task");
+    }
   };
 
   const markComplete = (task) => {

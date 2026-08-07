@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useCurrentUser } from "@/components/layout/UserContext";
+import { getMyTasks, createTask, updateTaskStatus, deleteTask, getUsersForSelect } from "@/app/(app)/TaskAssignment/actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,7 +31,7 @@ const EMPTY_FORM = { title: "", description: "", priority: "medium", due_date: "
 
 export default function CoordinatorTasks() {
   const [creating, setCreating] = useState(false);
-  const effectiveUser = { role: "therapist", user_type: "therapist", full_name: "User", email: "user@example.com" };
+  const effectiveUser = useCurrentUser();
 
   const isAdmin = ["admin", "superuser"].includes(effectiveUser?.user_type) || ["admin", "superuser"].includes(effectiveUser?.role);
 
@@ -37,34 +39,69 @@ export default function CoordinatorTasks() {
   const [notes, setNotes] = useState({});
   const [expandedId, setExpandedId] = useState(null);
   const [showDailyForm, setShowDailyForm] = useState(false);
-  const [taskType, setTaskType] = useState("daily"); // "daily" or "assigned"
+  const [taskType, setTaskType] = useState("daily");
   const [dailyForm, setDailyForm] = useState(EMPTY_FORM);
   const [escalateTask, setEscalateTask] = useState(null);
 
   const today = format(new Date(), "yyyy-MM-dd");
 
-  // All tasks assigned to this coordinator
-  const allTasks = [];
-  const isLoading = false;
+  const [allTasks, setAllTasks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [users, setUsers] = useState([]);
 
-  const users = [];
+  const loadData = useCallback(async () => {
+    if (!effectiveUser?.email) return;
+    try {
+      const [taskData, userData] = await Promise.all([
+        getMyTasks(effectiveUser.email),
+        getUsersForSelect(),
+      ]);
+      setAllTasks(taskData);
+      setUsers(userData);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [effectiveUser?.email]);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const handleUpdate = async ({ id, data }) => {
-    console.log("save:", { id, data });
-    toast.success("Task updated");
+    try {
+      await updateTaskStatus(id, data.status);
+      toast.success("Task updated");
+      loadData();
+    } catch (err) {
+      toast.error("Failed to update task");
+    }
   };
 
   const handleCreate = async (data) => {
-    console.log("save:", data);
-    setShowDailyForm(false);
-    setDailyForm(EMPTY_FORM);
-    setTaskType("daily");
-    toast.success("Task added");
+    try {
+      const result = await createTask(data);
+      if (result?.success) {
+        setShowDailyForm(false);
+        setDailyForm(EMPTY_FORM);
+        setTaskType("daily");
+        toast.success("Task added");
+        loadData();
+      }
+    } catch (err) {
+      toast.error("Failed to create task");
+    }
   };
 
   const handleDeleteTask = async (id) => {
-    console.log("save:", { delete: id });
-    toast.success("Task deleted");
+    try {
+      const result = await deleteTask(id);
+      if (result?.success) {
+        toast.success("Task deleted");
+        loadData();
+      }
+    } catch (err) {
+      toast.error("Failed to delete task");
+    }
   };
 
   const handleEscalateTask = async ({ task, escalatedTo, escalatedToName, reason, followUpDate }) => {

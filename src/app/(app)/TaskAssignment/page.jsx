@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useCurrentUser } from "@/components/layout/UserContext";
+import { getTasks, createTask, updateTaskStatus, deleteTask, getUsersForSelect } from "./actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +28,7 @@ const statusColor = {
 const EMPTY = { title: "", description: "", assigned_to: "", assigned_to_name: "", due_date: "", priority: "medium", task_type: "assigned" };
 
 export default function TaskAssignment() {
-  const effectiveUser = { role: "therapist", user_type: "therapist", full_name: "User", email: "user@example.com" };
+  const effectiveUser = useCurrentUser();
   const isAdmin = ["admin", "superuser"].includes(effectiveUser?.role) || ["admin", "superuser"].includes(effectiveUser?.user_type);
   const isTherapist = effectiveUser?.role === "therapist" || effectiveUser?.user_type === "therapist";
   const canAssign = isAdmin || isTherapist;
@@ -35,29 +37,61 @@ export default function TaskAssignment() {
   const [form, setForm] = useState(EMPTY);
   const [filterStatus, setFilterStatus] = useState("all");
   const [taskType, setTaskType] = useState("assigned");
+  const [tasks, setTasks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [users, setUsers] = useState([]);
 
-  const tasks = [];
-  const isLoading = false;
+  const loadData = useCallback(async () => {
+    try {
+      const [taskData, userData] = await Promise.all([getTasks(), getUsersForSelect()]);
+      setTasks(taskData);
+      setUsers(userData);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  const users = [];
+  useEffect(() => { loadData(); }, [loadData]);
 
   const [creating, setCreating] = useState(false);
   const handleCreateTask = async (data) => {
     setCreating(true);
-    console.log("save:", data);
-    setShowForm(false);
-    setForm(EMPTY);
-    toast.success("Task created");
-    setCreating(false);
+    try {
+      const result = await createTask(data);
+      if (result?.success) {
+        setShowForm(false);
+        setForm(EMPTY);
+        toast.success("Task created");
+        loadData();
+      }
+    } catch (err) {
+      toast.error("Failed to create task");
+    } finally {
+      setCreating(false);
+    }
   };
 
   const handleDeleteTask = async (id) => {
-    console.log("save:", id);
-    toast.success("Task deleted");
+    try {
+      const result = await deleteTask(id);
+      if (result?.success) {
+        toast.success("Task deleted");
+        loadData();
+      }
+    } catch (err) {
+      toast.error("Failed to delete task");
+    }
   };
 
   const handleUpdateStatus = async ({ id, status }) => {
-    console.log("save:", { id, status });
+    try {
+      await updateTaskStatus(id, status);
+      loadData();
+    } catch (err) {
+      toast.error("Failed to update status");
+    }
   };
 
   if (!canAssign) {
