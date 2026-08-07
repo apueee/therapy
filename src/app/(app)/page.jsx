@@ -2,6 +2,7 @@
 
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { useCurrentUser } from "@/components/layout/UserContext";
 import SuperuserDashboard from "@/components/dashboard/SuperuserDashboard";
 import AdminDashboard from "@/components/dashboard/AdminDashboard";
 import TherapistDashboard from "@/components/dashboard/TherapistDashboard";
@@ -16,9 +17,10 @@ export default function DashboardPage() {
 
 function Dashboard() {
   const searchParams = useSearchParams();
+  const currentUser = useCurrentUser();
   const roleParam = searchParams.get("role");
-  const userType = roleParam || "therapist";
-  const effectiveUser = { user_type: userType, role: userType, full_name: "User" };
+  const userType = roleParam || currentUser?.user_type || "therapist";
+  const effectiveUser = { ...currentUser, user_type: userType, role: userType };
 
   switch (userType) {
     case "superuser":

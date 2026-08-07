@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOutAction } from "./sign-out-action";
+import { UserProvider } from "./UserContext";
 import { ChevronDown } from "lucide-react";
 import {
   LayoutDashboard,
@@ -184,6 +186,7 @@ export default function Layout({ children, user }) {
       {/* Sign Out */}
       <div className="px-3 pb-3 border-t border-slate-100 pt-3">
         <button
+          onClick={() => signOutAction()}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all"
         >
           <LogOut className="w-[18px] h-[18px]" />
@@ -195,6 +198,7 @@ export default function Layout({ children, user }) {
   );
 
   return (
+    <UserProvider user={effectiveUser}>
     <div className="min-h-screen bg-slate-50/50 flex">
       {/* Desktop sidebar */}
       <aside className="hidden lg:block w-60 shrink-0 fixed inset-y-0 left-0 z-30">
@@ -232,5 +236,6 @@ export default function Layout({ children, user }) {
         </div>
       </main>
     </div>
+    </UserProvider>
   );
 }
