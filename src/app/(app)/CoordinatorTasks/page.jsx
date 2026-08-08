@@ -274,8 +274,7 @@ export default function CoordinatorTasks() {
     handleEscalateTask({ task: escalateTask, escalatedTo, escalatedToName, reason, followUpDate });
   };
 
-  // All users for escalation target
-  const allUsers = [];
+  const allUsers = users;
 
   return (
     <div className="space-y-6">

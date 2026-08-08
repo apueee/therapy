@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { getPatientById } from "@/app/(app)/Patients/actions";
+import { getPatientVisits } from "@/app/(app)/VisitNotes/actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,18 +39,23 @@ function PatientDetail() {
 
   const [patient, setPatient] = useState(null);
   const [loadingPatient, setLoadingPatient] = useState(true);
-  const visitNotes = [];
-  const loadingVisits = false;
+  const [visitNotes, setVisitNotes] = useState([]);
+  const [loadingVisits, setLoadingVisits] = useState(true);
 
   const loadPatient = useCallback(async () => {
-    if (!patientId) { setLoadingPatient(false); return; }
+    if (!patientId) { setLoadingPatient(false); setLoadingVisits(false); return; }
     try {
-      const data = await getPatientById(patientId);
-      setPatient(data);
+      const [patientData, visitsData] = await Promise.all([
+        getPatientById(patientId),
+        getPatientVisits(patientId),
+      ]);
+      setPatient(patientData);
+      setVisitNotes(visitsData);
     } catch (err) {
       console.error(err);
     } finally {
       setLoadingPatient(false);
+      setLoadingVisits(false);
     }
   }, [patientId]);
 

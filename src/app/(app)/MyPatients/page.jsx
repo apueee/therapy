@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useCurrentUser } from "@/components/layout/UserContext";
 import { getPatients } from "@/app/(app)/Patients/actions";
+import { getCalendarVisits, getTherapistsForSchedule } from "@/app/(app)/VisitCalendar/actions";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,14 +23,20 @@ export default function MyPatients() {
   const [loadingPatients, setLoadingPatients] = useState(true);
   const effectiveUser = useCurrentUser();
 
-  const allTherapists = [];
-  const visits = [];
+  const [allTherapists, setAllTherapists] = useState([]);
+  const [visits, setVisits] = useState([]);
   const assignments = [];
 
   const loadPatients = useCallback(async () => {
     try {
-      const data = await getPatients();
-      setAllPatients(data);
+      const [patientData, visitData, therapistData] = await Promise.all([
+        getPatients(),
+        getCalendarVisits(),
+        getTherapistsForSchedule(),
+      ]);
+      setAllPatients(patientData);
+      setVisits(visitData);
+      setAllTherapists(therapistData);
     } catch (err) {
       console.error(err);
     } finally {

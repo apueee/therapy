@@ -1,8 +1,10 @@
 "use client";
 
-import { Suspense, useState, useMemo } from "react";
+import { Suspense, useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { getPatientById } from "@/app/(app)/Patients/actions";
+import { getPatientVisits } from "@/app/(app)/VisitNotes/actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,9 +23,27 @@ function PatientTherapyDetail() {
   const patientId = searchParams.get("patientId");
   const therapyType = searchParams.get("therapyType");
 
-  const patient = null;
-  const visitNotes = [];
-  const isLoading = false;
+  const [patient, setPatient] = useState(null);
+  const [visitNotes, setVisitNotes] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadData = useCallback(async () => {
+    if (!patientId) { setIsLoading(false); return; }
+    try {
+      const [patientData, visitsData] = await Promise.all([
+        getPatientById(patientId),
+        getPatientVisits(patientId),
+      ]);
+      setPatient(patientData);
+      setVisitNotes(visitsData);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [patientId]);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [selectedCertIdx, setSelectedCertIdx] = useState(0);
