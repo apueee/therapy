@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useCurrentUser } from "@/components/layout/UserContext";
+import { getDeletionRequests, approveDeletionRequest, rejectDeletionRequest } from "@/app/(app)/Orders/actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,24 +20,58 @@ const statusColor = {
 };
 
 export default function MedicalRecordDeletions() {
-  const currentUser = { role: "admin", user_type: "admin", email: "admin@test.com", full_name: "Admin User" };
+  const currentUser = useCurrentUser();
   const [approveDialog, setApproveDialog] = useState(null);
   const [rejectDialog, setRejectDialog] = useState(null);
   const [password, setPassword] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [requests, setRequests] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const requests = [];
-  const isLoading = false;
+  const loadRequests = useCallback(async () => {
+    try {
+      const data = await getDeletionRequests();
+      setRequests(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadRequests(); }, [loadRequests]);
 
   const handleApprove = async () => {
-    // mock no-op
-    setApproveDialog(null);
-    setPassword("");
+    if (!approveDialog) return;
+    setActionLoading(true);
+    try {
+      const result = await approveDeletionRequest(approveDialog.id);
+      if (result?.success) {
+        toast.success("Medical record deleted permanently");
+        loadRequests();
+      }
+    } catch (err) {
+      toast.error(err.message || "Failed to approve deletion");
+    } finally {
+      setActionLoading(false);
+      setApproveDialog(null);
+      setPassword("");
+    }
   };
 
   const handleReject = async () => {
-    // mock no-op
-    setRejectDialog(null);
+    if (!rejectDialog) return;
+    try {
+      const result = await rejectDeletionRequest(rejectDialog.id);
+      if (result?.success) {
+        toast.success("Deletion request rejected");
+        loadRequests();
+      }
+    } catch (err) {
+      toast.error("Failed to reject deletion request");
+    } finally {
+      setRejectDialog(null);
+    }
   };
 
   const pending = requests.filter(r => r.status === "pending");

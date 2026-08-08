@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { getCalendarVisits } from "@/app/(app)/VisitCalendar/actions";
+import { getDeletionRequests } from "./actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -63,10 +64,16 @@ export default function Orders() {
   const [visits, setVisits] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadVisits = useCallback(async () => {
+  const [deletionRequests, setDeletionRequests] = useState([]);
+
+  const loadData = useCallback(async () => {
     try {
-      const data = await getCalendarVisits();
-      setVisits(data);
+      const [visitData, delData] = await Promise.all([
+        getCalendarVisits(),
+        getDeletionRequests(),
+      ]);
+      setVisits(visitData);
+      setDeletionRequests(delData);
     } catch (err) {
       console.error(err);
     } finally {
@@ -74,13 +81,12 @@ export default function Orders() {
     }
   }, []);
 
-  useEffect(() => { loadVisits(); }, [loadVisits]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   const evalOrders = visits.filter((v) => v.visit_type === "evaluation" && (v.status === "completed" || v.status === "signed"));
   const recertOrders = visits.filter((v) => v.visit_type === "re_evaluation" && (v.status === "completed" || v.status === "signed"));
   const dischargeOrders = visits.filter((v) => v.visit_type === "discharge" && (v.status === "completed" || v.status === "signed"));
 
-  const deletionRequests = [];
   const pendingDeletions = deletionRequests.filter(r => r.status === "pending").length;
 
   return (
