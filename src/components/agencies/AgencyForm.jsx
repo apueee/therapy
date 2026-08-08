@@ -113,14 +113,17 @@ export default function AgencyForm({ open, onClose, onSave, initial }) {
 
     setUploading(true);
     try {
-      // Mock upload - no actual API call
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
       const arr = form.documents || [];
       set("documents", [
         ...arr,
         {
           name: file.name,
           type: "contract",
-          url: "#",
+          url: data.url || "#",
           uploaded_date: new Date().toISOString(),
         },
       ]);

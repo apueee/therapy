@@ -58,8 +58,21 @@ export default function DoorPhotoCapture({ photoUrl, onPhotoSaved, onRemove }) {
 
   const confirmPhoto = async () => {
     setMode("uploading");
-    // Mock upload - no-op, use data URL directly
-    onPhotoSaved(capturedImage || "#");
+    try {
+      const blob = await (await fetch(capturedImage)).blob();
+      const file = new File([blob], "door-photo.jpg", { type: "image/jpeg" });
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.url) {
+        onPhotoSaved(data.url);
+      } else {
+        onPhotoSaved(capturedImage || "#");
+      }
+    } catch {
+      onPhotoSaved(capturedImage || "#");
+    }
     setCapturedImage(null);
     setMode("idle");
   };

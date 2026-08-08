@@ -35,8 +35,15 @@ function FileRow({ label, fileKey, url, expDate, onUpload, onRemove, onExpDateCh
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    // Mock upload
-    onUpload(fileKey, "#");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      onUpload(fileKey, data.url || "#");
+    } catch {
+      onUpload(fileKey, "#");
+    }
     setUploading(false);
     e.target.value = "";
   };

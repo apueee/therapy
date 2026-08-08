@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UserPlus, CheckCircle, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { inviteUser } from "@/app/(app)/UserManagement/actions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import TherapistFilesSection from "./TherapistFilesSection";
@@ -66,9 +67,14 @@ export default function TherapistForm({ open, onClose, onSave, initial }) {
     try {
       await onSave(form);
       if (!initial && createUser && form.email) {
-        // Mock invite: no-op
-        setInviteStatus("success");
-        toast.success(`Invite sent to ${form.email}`);
+        const result = await inviteUser({ email: form.email, userType: "therapist" });
+        if (result?.error) {
+          setInviteStatus("error");
+          toast.error(result.error);
+        } else {
+          setInviteStatus("success");
+          toast.success(`User account created for ${form.email}`);
+        }
       }
     } finally {
       setSaving(false);

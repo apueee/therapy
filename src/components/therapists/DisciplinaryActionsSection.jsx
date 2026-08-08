@@ -48,9 +48,17 @@ function IncidentForm({ onSave, onCancel }) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    // Mock: no actual upload
-    set("document_url", "#");
-    set("document_name", file.name);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      set("document_url", data.url || "#");
+      set("document_name", file.name);
+    } catch {
+      set("document_url", "#");
+      set("document_name", file.name);
+    }
     setUploading(false);
     e.target.value = "";
   };

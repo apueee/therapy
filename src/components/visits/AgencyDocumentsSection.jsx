@@ -23,8 +23,11 @@ export default function AgencyDocumentsSection({ agencyName, agencyDocs = [], re
     if (!file) return;
     setUploading(docName);
     try {
-      // Mock upload - no-op
-      const file_url = "#";
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      const file_url = data.url || "#";
       const updated = agencyDocs.filter((d) => d.name !== docName);
       onChange([...updated, { name: docName, url: file_url, required: true }]);
     } finally {

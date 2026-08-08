@@ -15,10 +15,17 @@ export default function PDFTemplateFiller({ visit, onUpdate }) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    // Mock upload - no-op
-    const file_url = "#";
-    setTemplateUrl(file_url);
-    onUpdate?.({ ...visit, pdf_template_url: file_url });
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      const file_url = data.url || "#";
+      setTemplateUrl(file_url);
+      onUpdate?.({ ...visit, pdf_template_url: file_url });
+    } catch {
+      setTemplateUrl("#");
+    }
     setUploading(false);
     e.target.value = "";
   };

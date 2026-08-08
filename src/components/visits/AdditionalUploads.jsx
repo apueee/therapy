@@ -17,8 +17,11 @@ export default function AdditionalUploads({ uploads = [], onChange }) {
   const uploadFile = async (file) => {
     setUploading(true);
     try {
-      // Mock upload - no-op
-      const file_url = "#";
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      const file_url = data.url || "#";
       const name = file.name || `Photo_${new Date().toLocaleTimeString()}`;
       onChange([...uploads, { name, url: file_url, uploaded_at: new Date().toISOString() }]);
     } finally {
@@ -57,9 +60,17 @@ export default function AdditionalUploads({ uploads = [], onChange }) {
     canvas.height = video.videoHeight;
     canvas.getContext("2d").drawImage(video, 0, 0);
     closeCamera();
-    // Mock upload - no-op
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg"));
     const name = `Photo_${Date.now()}.jpg`;
-    onChange([...uploads, { name, url: "#", uploaded_at: new Date().toISOString() }]);
+    const formData = new FormData();
+    formData.append("file", new File([blob], name, { type: "image/jpeg" }));
+    try {
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      onChange([...uploads, { name, url: data.url || "#", uploaded_at: new Date().toISOString() }]);
+    } catch {
+      onChange([...uploads, { name, url: "#", uploaded_at: new Date().toISOString() }]);
+    }
   };
 
   const removeUpload = (idx) => onChange(uploads.filter((_, i) => i !== idx));

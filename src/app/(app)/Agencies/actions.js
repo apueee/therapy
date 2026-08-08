@@ -137,6 +137,7 @@ export async function updateAgency(id, data) {
     if (data.supervisory_visit_frequency !== undefined) updateData.supervisoryVisitFrequency = data.supervisory_visit_frequency;
     if (data.documentation_setup !== undefined) updateData.documentationSetup = data.documentation_setup;
     if (data.required_visit_documents !== undefined) updateData.requiredVisitDocuments = data.required_visit_documents;
+    if (data.work_week_start_day !== undefined) updateData.workWeekStartDay = data.work_week_start_day;
 
     if (data.contacts?.length) {
       updateData.contacts = {

@@ -1,8 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { requireRole } from "@/lib/auth/session";
-import { hashPassword } from "@/lib/auth/password";
+import { requireAuth, requireRole } from "@/lib/auth/session";
+import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { logAudit } from "@/lib/audit";
 import { headers } from "next/headers";
 import { getClientIp } from "@/lib/audit/logger";
@@ -190,4 +190,24 @@ export async function syncTherapistsToUsers() {
   });
 
   return { created, linked };
+}
+
+export async function verifyCurrentUserPassword(password) {
+  const sessionUser = await requireAuth();
+
+  const user = await prisma.user.findUnique({
+    where: { id: sessionUser.id },
+    select: { passwordHash: true },
+  });
+
+  if (!user?.passwordHash) {
+    return { success: false, error: "Account has no password set" };
+  }
+
+  const valid = await verifyPassword(password, user.passwordHash);
+  if (!valid) {
+    return { success: false, error: "Incorrect password" };
+  }
+
+  return { success: true };
 }

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Lock, Eye, EyeOff, ShieldCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { verifyCurrentUserPassword } from "@/app/(app)/UserManagement/actions";
 
 /**
  * Wraps sensitive HR content behind a password confirmation gate.
@@ -22,10 +23,19 @@ export default function HRPasswordGate({ label = "HR Records", children }) {
     if (!password) return;
     setVerifying(true);
     setError("");
-    // Mock: always unlock
-    setVerifying(false);
-    setUnlocked(true);
-    setPassword("");
+    try {
+      const result = await verifyCurrentUserPassword(password);
+      if (result.success) {
+        setUnlocked(true);
+        setPassword("");
+      } else {
+        setError(result.error || "Incorrect password");
+      }
+    } catch (err) {
+      setError("Verification failed");
+    } finally {
+      setVerifying(false);
+    }
   };
 
   if (unlocked) {

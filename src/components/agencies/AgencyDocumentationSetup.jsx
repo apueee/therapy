@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Plus, X, Save, ChevronDown, ChevronUp, GripVertical, FileText } from "lucide-react";
+import { toast } from "sonner";
+import { updateAgency } from "@/app/(app)/Agencies/actions";
 
 const FIELD_TYPES = [
   { value: "text", label: "Text" },
@@ -167,15 +169,22 @@ export default function AgencyDocumentationSetup({ agencies }) {
     setSections(sections.filter((_, i) => i !== idx));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!selectedAgencyId) return;
     setSaving(true);
-    // Mock save - no actual API call
-    setTimeout(() => {
-      setSaving(false);
+    try {
+      await updateAgency(selectedAgencyId, {
+        documentation_setup: sections,
+        work_week_start_day: workWeekStartDay,
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    }, 300);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save documentation setup");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
