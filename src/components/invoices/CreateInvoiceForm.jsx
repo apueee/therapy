@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FileText, DollarSign } from "lucide-react";
+import { getAgenciesForInvoice, getCompletedVisitsForInvoice, createInvoice } from "@/app/(app)/Invoices/actions";
+import { toast } from "sonner";
 
 const VISIT_TYPE_LABELS = {
   evaluation: "Evaluation",
@@ -34,8 +36,23 @@ export default function CreateInvoiceForm({ onSaved, initialAgencyId = "", initi
   const [rateOverrides, setRateOverrides] = useState({});
   const [saving, setSaving] = useState(false);
 
-  const agencies = [];
-  const allVisits = [];
+  const [agencies, setAgencies] = useState([]);
+  const [allVisits, setAllVisits] = useState([]);
+
+  const loadFormData = useCallback(async () => {
+    try {
+      const [agencyData, visitData] = await Promise.all([
+        getAgenciesForInvoice(),
+        getCompletedVisitsForInvoice(),
+      ]);
+      setAgencies(agencyData);
+      setAllVisits(visitData);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  useEffect(() => { loadFormData(); }, [loadFormData]);
 
   const selectedAgency = agencies.find((a) => a.id === agencyId);
 
@@ -43,7 +60,7 @@ export default function CreateInvoiceForm({ onSaved, initialAgencyId = "", initi
   const filteredVisits = useMemo(() => {
     if (!agencyId || !dateFrom || !dateTo) return [];
     return allVisits.filter((v) => {
-      const matchesAgency = v.agency === selectedAgency?.name;
+      const matchesAgency = v.agency_id === agencyId;
       const matchesDate = v.visit_date >= dateFrom && v.visit_date <= dateTo;
       const isCompleted = v.status === "completed" || v.status === "signed";
       return matchesAgency && matchesDate && isCompleted;
@@ -87,9 +104,35 @@ export default function CreateInvoiceForm({ onSaved, initialAgencyId = "", initi
   const handleSave = async () => {
     if (!agencyId || selectedVisits.length === 0) return;
     setSaving(true);
-    // Mock: no actual save
-    setSaving(false);
-    onSaved();
+    try {
+      const lineItems = selectedVisits.map((v) => ({
+        visit_note_id: v.id,
+        patient_name: v.patient_name,
+        visit_date: v.visit_date,
+        therapy_type: v.therapy_type,
+        visit_type: v.visit_type || "treatment",
+        therapist_name: v.therapist_name,
+        rate: getEffectiveRate(v),
+        quantity: 1,
+        subtotal: getEffectiveRate(v),
+      }));
+      const result = await createInvoice({
+        agency_id: agencyId,
+        date_from: dateFrom,
+        date_to: dateTo,
+        total_amount: totalAmount,
+        notes: notes || null,
+        line_items: lineItems,
+      });
+      if (result?.success) {
+        toast.success("Invoice created");
+        onSaved();
+      }
+    } catch (err) {
+      toast.error("Failed to create invoice");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

@@ -1,20 +1,31 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight } from "lucide-react";
+import { getAgenciesForInvoice } from "@/app/(app)/Invoices/actions";
 
 export default function CreateInvoiceDialog({ open, onOpenChange, onContinue }) {
   const [agencyId, setAgencyId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [invoiceType, setInvoiceType] = useState("Visits");
+  const [agencies, setAgencies] = useState([]);
 
-  const agencies = [];
+  const loadAgencies = useCallback(async () => {
+    try {
+      const data = await getAgenciesForInvoice();
+      setAgencies(data);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  useEffect(() => { if (open) loadAgencies(); }, [open, loadAgencies]);
 
   const handleContinue = () => {
     if (!agencyId || !startDate || !endDate) return;

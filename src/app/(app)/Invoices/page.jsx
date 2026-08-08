@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { getInvoices, createInvoice, updateInvoice, deleteInvoice } from "./actions";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -42,15 +44,43 @@ function InvoicesContent() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [createParams, setCreateParams] = useState(null);
 
-  const invoices = [];
-  const isLoading = false;
+  const [invoices, setInvoices] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadInvoices = useCallback(async () => {
+    try {
+      const data = await getInvoices();
+      setInvoices(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadInvoices(); }, [loadInvoices]);
 
   const handleDelete = async (id) => {
-    console.log("delete:", id);
+    try {
+      const result = await deleteInvoice(id);
+      if (result?.success) {
+        toast.success("Invoice deleted");
+        loadInvoices();
+      }
+    } catch (err) {
+      toast.error("Failed to delete invoice");
+    }
   };
 
   const handleUpdate = async ({ id, data }) => {
-    console.log("update:", { id, data });
+    try {
+      const result = await updateInvoice(id, data);
+      if (result?.success) {
+        loadInvoices();
+      }
+    } catch (err) {
+      toast.error("Failed to update invoice");
+    }
   };
 
   const handleStatusChange = async (invoiceId, status, selectedLineItems) => {
@@ -71,18 +101,21 @@ function InvoicesContent() {
       const paidTotal = paidItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
       const remainingTotal = remainingItems.reduce((sum, item) => sum + (item.subtotal || 0), 0);
 
-      // Create new invoice for paid items
-      console.log("create:", {
-        invoice_number: newInvoiceNumber,
-        agency_id: originalInvoice.agency_id,
-        agency_name: originalInvoice.agency_name,
-        date_from: originalInvoice.date_from,
-        date_to: originalInvoice.date_to,
-        line_items: paidItems,
-        total_amount: paidTotal,
-        status: "paid",
-        notes: originalInvoice.notes,
-      });
+      try {
+        await createInvoice({
+          invoice_number: newInvoiceNumber,
+          agency_id: originalInvoice.agency_id,
+          date_from: originalInvoice.date_from,
+          date_to: originalInvoice.date_to,
+          line_items: paidItems,
+          total_amount: paidTotal,
+          status: "paid",
+          notes: originalInvoice.notes,
+        });
+      } catch (err) {
+        toast.error("Failed to create split invoice");
+        return;
+      }
 
       // Update original invoice with remaining items
       handleUpdate({
@@ -199,7 +232,7 @@ function InvoicesContent() {
               initialDateTo={createParams.endDate}
               invoiceType={createParams.invoiceType}
               onSaved={() => {
-                console.log("save: invalidate invoices");
+                loadInvoices();
                 setActiveTab("list");
                 setCreateParams(null);
               }}
