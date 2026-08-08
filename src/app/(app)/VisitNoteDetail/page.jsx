@@ -98,11 +98,9 @@ function VisitNoteDetailContent() {
   const handleDownloadPDF = async () => {
     try {
       setIsDownloading(true);
-      console.log("save:", { visitId: id });
-      toast.success('PDF downloaded successfully');
+      toast.info("PDF generation is not yet implemented");
     } catch (error) {
       toast.error('Failed to download PDF');
-      console.error(error);
     } finally {
       setIsDownloading(false);
     }
