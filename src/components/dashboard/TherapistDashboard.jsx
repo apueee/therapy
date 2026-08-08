@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Users, FileText, Clock, CheckCircle, ChevronRight, DollarSign } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -9,18 +9,26 @@ import StatCard from "@/components/dashboard/StatCard";
 import RecentVisits from "@/components/dashboard/RecentVisits";
 import AwaitingAcceptance from "@/components/dashboard/AwaitingAcceptance";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { getPatients } from "@/app/(app)/Patients/actions";
+import { getCalendarVisits } from "@/app/(app)/VisitCalendar/actions";
+import { getTherapistsForSchedule } from "@/app/(app)/VisitCalendar/actions";
+import { getAssignments } from "@/components/patients/referral-actions";
 
 export default function TherapistDashboard({ user }) {
-  const therapists = [];
+  const [therapists, setTherapists] = useState([]);
+  const [allPatients, setAllPatients] = useState([]);
+  const [visits, setVisits] = useState([]);
+  const [assignments, setAssignments] = useState([]);
 
-  // Find the Therapist entity matching the current user (by email or name)
+  useEffect(() => {
+    Promise.all([getTherapistsForSchedule(), getPatients(), getCalendarVisits(), getAssignments()])
+      .then(([t, p, v, a]) => { setTherapists(t); setAllPatients(p); setVisits(v); setAssignments(a); })
+      .catch(console.error);
+  }, []);
+
   const myTherapistRecord = therapists.find(
     t => t.email === user?.email || t.full_name === user?.full_name
   );
-
-  const allPatients = [];
-  const visits = [];
-  const assignments = [];
 
   // All assignment IDs relevant to this therapist
   const myTherapistId = myTherapistRecord?.id;

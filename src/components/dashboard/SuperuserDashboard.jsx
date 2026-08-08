@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Users, UserCheck, FileText, Building2, Shield, Activity } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -9,13 +9,24 @@ import StatCard from "@/components/dashboard/StatCard";
 import RecentVisits from "@/components/dashboard/RecentVisits";
 import TherapyBreakdown from "@/components/dashboard/TherapyBreakdown";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { getPatients } from "@/app/(app)/Patients/actions";
+import { getTherapists } from "@/app/(app)/Therapists/actions";
+import { getCalendarVisits } from "@/app/(app)/VisitCalendar/actions";
+import { getAgencies } from "@/app/(app)/Agencies/actions";
+import { getUsers } from "@/app/(app)/UserManagement/actions";
 
 export default function SuperuserDashboard() {
-  const patients = [];
-  const therapists = [];
-  const visits = [];
-  const agencies = [];
-  const users = [];
+  const [patients, setPatients] = useState([]);
+  const [therapists, setTherapists] = useState([]);
+  const [visits, setVisits] = useState([]);
+  const [agencies, setAgencies] = useState([]);
+  const [users, setUsers] = useState([]);
+
+  useEffect(() => {
+    Promise.all([getPatients(), getTherapists(), getCalendarVisits(), getAgencies(), getUsers()])
+      .then(([p, t, v, a, u]) => { setPatients(p); setTherapists(t); setVisits(v); setAgencies(a); setUsers(u); })
+      .catch(console.error);
+  }, []);
 
   const activePatients = patients.filter((p) => p.status === "active").length;
   const activeTherapists = therapists.filter((t) => t.status === "active").length;

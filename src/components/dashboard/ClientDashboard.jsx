@@ -1,10 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { FileText, Calendar, Activity } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { getPatients } from "@/app/(app)/Patients/actions";
+import { getCalendarVisits } from "@/app/(app)/VisitCalendar/actions";
 
 const therapyColors = {
   "Physical Therapy": "bg-blue-100 text-blue-800 border-blue-200",
@@ -13,8 +15,14 @@ const therapyColors = {
 };
 
 export default function ClientDashboard({ user }) {
-  const visits = [];
-  const patients = [];
+  const [visits, setVisits] = useState([]);
+  const [patients, setPatients] = useState([]);
+
+  useEffect(() => {
+    Promise.all([getCalendarVisits(), getPatients()])
+      .then(([v, p]) => { setVisits(v); setPatients(p); })
+      .catch(console.error);
+  }, []);
 
   // Find patient record by matching email
   const myPatient = patients.find(p => p.email === user?.email);

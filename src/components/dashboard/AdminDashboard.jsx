@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Users, FileText, CalendarCheck, Clock, ChevronDown, ChevronUp, AlertCircle, XCircle, UserPlus, CalendarPlus, ClipboardList, Building2, Receipt, DollarSign, BarChart2, UserCog } from "lucide-react";
 import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,13 +15,24 @@ import ReferralManagement from "@/components/dashboard/ReferralManagement";
 import AdminAwaitingAcceptance from "@/components/dashboard/AdminAwaitingAcceptance";
 import OrdersAwaitingApproval from "@/components/dashboard/OrdersAwaitingApproval";
 import AwaitingAssignment from "@/components/dashboard/AwaitingAssignment";
+import { getPatients } from "@/app/(app)/Patients/actions";
+import { getTherapists } from "@/app/(app)/Therapists/actions";
+import { getCalendarVisits } from "@/app/(app)/VisitCalendar/actions";
+import { getAgencies } from "@/app/(app)/Agencies/actions";
+import { getAssignments } from "@/components/patients/referral-actions";
 
 export default function AdminDashboard() {
-  const patients = [];
-  const therapists = [];
-  const visits = [];
-  const agencies = [];
-  const assignments = [];
+  const [patients, setPatients] = useState([]);
+  const [therapists, setTherapists] = useState([]);
+  const [visits, setVisits] = useState([]);
+  const [agencies, setAgencies] = useState([]);
+  const [assignments, setAssignments] = useState([]);
+
+  useEffect(() => {
+    Promise.all([getPatients(), getTherapists(), getCalendarVisits(), getAgencies(), getAssignments()])
+      .then(([p, t, v, a, asgn]) => { setPatients(p); setTherapists(t); setVisits(v); setAgencies(a); setAssignments(asgn); })
+      .catch(console.error);
+  }, []);
 
   const activePatients = patients.filter((p) => p.status === "active").length;
   const drafts = visits.filter((v) => v.status === "draft").length;

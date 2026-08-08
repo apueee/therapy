@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Bell, BellOff, CheckCheck, Users, CalendarClock, FileWarning, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { formatDistanceToNow, format } from "date-fns";
 import ClockInOut from "@/components/coordinator/ClockInOut";
+import { getTherapists } from "@/app/(app)/Therapists/actions";
+import { getNotifications, markNotificationRead, markAllNotificationsRead } from "@/components/dashboard/dashboard-actions";
 
 const typeStyles = {
   hr_alert: { bg: "bg-indigo-50", border: "border-indigo-200", icon: <AlertTriangle className="w-4 h-4 text-indigo-500" />, badge: "bg-indigo-100 text-indigo-700" },
@@ -19,18 +21,35 @@ const typeStyles = {
 export default function HRDashboard({ user }) {
   const [filter, setFilter] = useState("unread");
 
-  const notifications = [];
-  const therapists = [];
-  const isLoading = false;
+  const [notifications, setNotifications] = useState([]);
+  const [therapists, setTherapists] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const markReadMutation = {
-    mutate: (id) => { /* no-op in static mode */ },
-    isPending: false,
+  const loadData = useCallback(async () => {
+    try {
+      const [notifs, theraps] = await Promise.all([
+        getNotifications(user?.email),
+        getTherapists(),
+      ]);
+      setNotifications(notifs);
+      setTherapists(theraps);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user?.email]);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const handleMarkRead = async (id) => {
+    await markNotificationRead(id);
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
   };
 
-  const markAllReadMutation = {
-    mutate: () => { /* no-op in static mode */ },
-    isPending: false,
+  const handleMarkAllRead = async () => {
+    await markAllNotificationsRead(user?.email);
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
   };
 
   const hrAlerts = notifications.filter(n => n.type === "hr_alert");
@@ -146,8 +165,8 @@ export default function HRDashboard({ user }) {
                   variant="ghost"
                   size="sm"
                   className="text-xs gap-1 text-slate-500 h-7"
-                  onClick={() => markAllReadMutation.mutate()}
-                  disabled={markAllReadMutation.isPending}
+                  onClick={() => handleMarkAllRead()}
+                  disabled={false}
                 >
                   <CheckCheck className="w-3.5 h-3.5" />
                   Mark all read
@@ -184,7 +203,7 @@ export default function HRDashboard({ user }) {
                     </div>
                     {!n.is_read && (
                       <button
-                        onClick={() => markReadMutation.mutate(n.id)}
+                        onClick={() => handleMarkRead(n.id)}
                         className="shrink-0 mt-0.5 text-slate-300 hover:text-green-500 transition-colors"
                         title="Mark as read"
                       >
