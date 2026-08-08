@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Edit, X } from "lucide-react";
+import { getAgenciesForSelect, getPatients } from "@/app/(app)/Patients/actions";
 
 export default function EditReferralForm({ onUpdate, preselectedPatientId }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -16,10 +17,16 @@ export default function EditReferralForm({ onUpdate, preselectedPatientId }) {
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  const agencies = [];
-  const patients = [];
+  const [agencies, setAgencies] = useState([]);
+  const [patients, setPatients] = useState([]);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    Promise.all([getAgenciesForSelect(), getPatients()])
+      .then(([a, p]) => { setAgencies(a); setPatients(p); })
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
     if (preselectedPatientId && patients.length > 0 && !selectedPatient) {
       const p = patients.find(pt => pt.id === preselectedPatientId);
       if (p) selectPatient(p);

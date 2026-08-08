@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCurrentUser } from "@/components/layout/UserContext";
 import { getPatients } from "@/app/(app)/Patients/actions";
 import { getCalendarVisits, getTherapistsForSchedule } from "@/app/(app)/VisitCalendar/actions";
+import { getAssignments } from "@/components/patients/referral-actions";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,18 +26,20 @@ export default function MyPatients() {
 
   const [allTherapists, setAllTherapists] = useState([]);
   const [visits, setVisits] = useState([]);
-  const assignments = [];
+  const [assignments, setAssignments] = useState([]);
 
   const loadPatients = useCallback(async () => {
     try {
-      const [patientData, visitData, therapistData] = await Promise.all([
+      const [patientData, visitData, therapistData, assignmentData] = await Promise.all([
         getPatients(),
         getCalendarVisits(),
         getTherapistsForSchedule(),
+        getAssignments(),
       ]);
       setAllPatients(patientData);
       setVisits(visitData);
       setAllTherapists(therapistData);
+      setAssignments(assignmentData);
     } catch (err) {
       console.error(err);
     } finally {

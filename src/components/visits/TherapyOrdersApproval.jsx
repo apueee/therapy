@@ -1,16 +1,25 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, CheckCircle, Clock } from "lucide-react";
+import { getAssignments } from "@/components/patients/referral-actions";
 
 export default function TherapyOrdersApproval({ visit }) {
   const weeklyVisits = visit?.therapy_orders?.weekly_visits || [];
   const frequency = visit?.therapy_orders?.frequency;
 
-  // Mock data - empty assignments
-  const assignments = [];
+  const [assignments, setAssignments] = useState([]);
+
+  useEffect(() => {
+    if (visit?.patient_id) {
+      getAssignments()
+        .then(all => setAssignments(all.filter(a => a.patient_id === visit.patient_id)))
+        .catch(console.error);
+    }
+  }, [visit?.patient_id]);
+
   const treatmentAssignment = assignments.find(a => a.visit_type === "treatment");
   const approvedWeekly = treatmentAssignment?.approved_weekly_visits || [];
 

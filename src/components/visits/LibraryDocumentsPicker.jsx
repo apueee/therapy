@@ -1,11 +1,17 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getDocuments } from "@/app/(app)/DocumentLibrary/actions";
 
 export default function LibraryDocumentsPicker({ selected, onChange }) {
-  // Mock data - empty library
-  const docs = [];
+  const [docs, setDocs] = useState([]);
+
+  useEffect(() => {
+    getDocuments()
+      .then(all => setDocs(all.filter(d => d.is_active !== false)))
+      .catch(console.error);
+  }, []);
 
   if (docs.length === 0) return null;
 

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCurrentUser } from "@/components/layout/UserContext";
 import { getPatients, createPatient, updatePatient } from "./actions";
 import { getCalendarVisits } from "@/app/(app)/VisitCalendar/actions";
-import { createReferral } from "@/components/patients/referral-actions";
+import { createReferral, getAssignments } from "@/components/patients/referral-actions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,16 +44,18 @@ export default function Patients() {
   const isTherapist = !isAdmin;
 
   const [visits, setVisits] = useState([]);
-  const assignments = [];
+  const [assignments, setAssignments] = useState([]);
 
   const loadPatients = useCallback(async () => {
     try {
-      const [patientData, visitData] = await Promise.all([
+      const [patientData, visitData, assignmentData] = await Promise.all([
         getPatients(),
         getCalendarVisits(),
+        getAssignments(),
       ]);
       setAllPatients(patientData);
       setVisits(visitData);
+      setAssignments(assignmentData);
     } catch (err) {
       console.error(err);
     } finally {

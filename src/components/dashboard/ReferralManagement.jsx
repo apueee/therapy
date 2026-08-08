@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ClipboardCheck, UserCheck, Trash2 } from "lucide-react";
 import { AlertCircle } from "lucide-react";
+import { getAssignments, createAssignment } from "@/components/patients/referral-actions";
 
 const PTA_COTA = ["PTA", "COTA"];
 
@@ -16,7 +17,11 @@ export default function ReferralManagement({ patients, therapists, visits, agenc
   const [selectedTherapist, setSelectedTherapist] = useState("");
   const [selectedTherapyType, setSelectedTherapyType] = useState("");
 
-  const assignments = [];
+  const [assignments, setAssignments] = useState([]);
+
+  useEffect(() => {
+    getAssignments().then(setAssignments).catch(console.error);
+  }, []);
 
   // Create a flat list of pending referrals (one entry per therapy type)
   const pendingReferrals = patients.flatMap(p => {
@@ -73,9 +78,7 @@ export default function ReferralManagement({ patients, therapists, visits, agenc
     });
   });
 
-  // Mock mutations as no-ops
-  const deleteReferralMutation = { mutate: () => {}, isPending: false };
-  const createAssignmentMutation = { mutate: () => {}, isPending: false };
+  const [assigning, setAssigning] = useState(false);
 
   const openAssignDialog = (patient, therapyType, visitType) => {
     setAssignDialog({
@@ -86,12 +89,28 @@ export default function ReferralManagement({ patients, therapists, visits, agenc
     setSelectedTherapyType(therapyType);
   };
 
-  const handleAssign = () => {
+  const handleAssign = async () => {
     if (!selectedTherapist || !selectedTherapyType) return;
-    // mock no-op
-    setAssignDialog(null);
-    setSelectedTherapist("");
-    setSelectedTherapyType("");
+    setAssigning(true);
+    try {
+      await createAssignment({
+        patient_id: assignDialog.patient.id,
+        patient_name: `${assignDialog.patient.first_name} ${assignDialog.patient.last_name}`,
+        therapist_id: selectedTherapist,
+        therapy_type: selectedTherapyType,
+        visit_type: assignDialog.visitType,
+        agency: assignDialog.patient.agency || null,
+      });
+      const updated = await getAssignments();
+      setAssignments(updated);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAssigning(false);
+      setAssignDialog(null);
+      setSelectedTherapist("");
+      setSelectedTherapyType("");
+    }
   };
 
   const getAvailableTherapists = (therapyType, visitType, patientAgency) => {
@@ -180,8 +199,8 @@ export default function ReferralManagement({ patients, therapists, visits, agenc
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => { if (confirm(`Remove ${referral.therapyType} referral for ${referral.patient.first_name} ${referral.patient.last_name}?`)) deleteReferralMutation.mutate({ patient: referral.patient, therapyType: referral.therapyType }); }}
-                      disabled={deleteReferralMutation.isPending}
+                      onClick={() => { if (confirm(`Remove ${referral.therapyType} referral for ${referral.patient.first_name} ${referral.patient.last_name}?`)) {} }}
+                      disabled={false}
                       className="h-8 w-8 text-red-400 hover:text-red-600 hover:bg-red-50"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -248,10 +267,10 @@ export default function ReferralManagement({ patients, therapists, visits, agenc
               </Button>
               <Button
                 onClick={handleAssign}
-                disabled={!selectedTherapist || !selectedTherapyType || createAssignmentMutation.isPending}
+                disabled={!selectedTherapist || !selectedTherapyType || assigning}
                 className="bg-teal-600 hover:bg-teal-700"
               >
-                {createAssignmentMutation.isPending ? "Assigning..." : "Assign to Therapist"}
+                {assigning ? "Assigning..." : "Assign to Therapist"}
               </Button>
             </DialogFooter>
           </DialogContent>

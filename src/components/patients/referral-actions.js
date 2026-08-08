@@ -43,6 +43,76 @@ export async function getReferrals() {
   });
 }
 
+const DISCIPLINE_DISPLAY = { PT: "Physical Therapy", OT: "Occupational Therapy", ST: "Speech Therapy" };
+const DISCIPLINE_ENUM = { "Physical Therapy": "PT", "Occupational Therapy": "OT", "Speech Therapy": "ST" };
+
+function assignmentToSnakeCase(a) {
+  return {
+    id: a.id,
+    patient_id: a.patientId,
+    patient_name: a.patientName,
+    therapist_id: a.therapistId,
+    therapist_name: a.therapistName,
+    supervising_therapist_id: a.supervisingTherapistId,
+    supervising_therapist_name: a.supervisingTherapistName,
+    therapy_type: DISCIPLINE_DISPLAY[a.therapyType] || a.therapyType,
+    visit_type: a.visitType?.toLowerCase(),
+    agency: a.agency,
+    status: a.status?.toLowerCase(),
+    eval_visit_note_id: a.evalVisitNoteId,
+    approved_weekly_visits: a.approvedWeeklyVisits || [],
+    assignment_history: a.assignmentHistory || [],
+    declined_by: a.declinedBy,
+    declined_reason: a.declinedReason,
+    recalled_from: a.recalledFrom,
+    created_at: a.createdAt,
+  };
+}
+
+export async function getAssignments() {
+  await requireAuth();
+
+  const assignments = await prisma.referralAssignment.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+
+  return assignments.map(assignmentToSnakeCase);
+}
+
+export async function createAssignment(data) {
+  const user = await requireRole("SUPERUSER", "ADMIN", "COORDINATOR");
+
+  const therapist = data.therapist_id
+    ? await prisma.therapist.findUnique({ where: { id: data.therapist_id }, select: { fullName: true } })
+    : null;
+
+  const assignment = await prisma.referralAssignment.create({
+    data: {
+      patientId: data.patient_id,
+      patientName: data.patient_name,
+      therapistId: data.therapist_id || null,
+      therapistName: therapist?.fullName || data.therapist_name || null,
+      therapyType: DISCIPLINE_ENUM[data.therapy_type] || data.therapy_type,
+      visitType: (data.visit_type || "evaluation").toUpperCase(),
+      agency: data.agency || null,
+      status: "PENDING",
+    },
+  });
+
+  const h = await headers();
+  await logAudit({
+    user,
+    action: "CREATE",
+    resourceType: "ReferralAssignment",
+    resourceId: assignment.id,
+    resourceLabel: `${data.patient_name} - ${data.therapy_type}`,
+    details: `Assigned ${therapist?.fullName || "unassigned"} for ${data.visit_type}`,
+    ipAddress: getClientIp(h),
+  });
+
+  return { success: true, id: assignment.id };
+}
+
 export async function createReferral(data) {
   const user = await requireRole("SUPERUSER", "ADMIN", "COORDINATOR");
 

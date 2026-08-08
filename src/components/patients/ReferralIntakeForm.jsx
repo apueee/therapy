@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Save, Calendar, Search, X } from "lucide-react";
+import { getAgenciesForSelect, getPatients } from "@/app/(app)/Patients/actions";
+import { getTherapists } from "@/app/(app)/Therapists/actions";
 
 export default function ReferralIntakeForm({ onSave }) {
   const [form, setForm] = useState({
@@ -49,9 +51,15 @@ export default function ReferralIntakeForm({ onSave }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
 
-  const patients = [];
-  const therapists = [];
-  const agencies = [];
+  const [patients, setPatients] = useState([]);
+  const [therapists, setTherapists] = useState([]);
+  const [agencies, setAgencies] = useState([]);
+
+  useEffect(() => {
+    Promise.all([getPatients(), getTherapists(), getAgenciesForSelect()])
+      .then(([p, t, a]) => { setPatients(p); setTherapists(t); setAgencies(a); })
+      .catch(console.error);
+  }, []);
 
   const ptTherapists = therapists.filter(t => t.discipline === "Physical Therapy");
   const otTherapists = therapists.filter(t => t.discipline === "Occupational Therapy");

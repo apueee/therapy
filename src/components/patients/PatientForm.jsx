@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,11 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Plus, X } from "lucide-react";
+import { getAgenciesForSelect } from "@/app/(app)/Patients/actions";
 
 const THERAPY_TYPES = ["Physical Therapy", "Occupational Therapy", "Speech Therapy"];
 
 export default function PatientForm({ open, onClose, onSave, initial }) {
-  const agencies = [];
+  const [agencies, setAgencies] = useState([]);
 
   const [form, setForm] = useState(initial || {
     first_name: "", last_name: "", date_of_birth: "",
@@ -27,6 +28,12 @@ export default function PatientForm({ open, onClose, onSave, initial }) {
     notes: "", status: "active",
   });
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      getAgenciesForSelect().then(setAgencies).catch(console.error);
+    }
+  }, [open]);
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
