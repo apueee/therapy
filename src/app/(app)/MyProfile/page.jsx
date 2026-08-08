@@ -69,8 +69,13 @@ export default function MyProfile() {
   const handleFileUpload = async (fieldKey, file) => {
     setUploading(prev => ({ ...prev, [fieldKey]: true }));
     try {
-      console.log("save:", { fieldKey, file: file.name });
-      toast.error("Upload failed");
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+      setForm(prev => ({ ...prev, [fieldKey]: data.url }));
+      toast.success("File uploaded");
     } catch {
       toast.error("Upload failed");
     } finally {

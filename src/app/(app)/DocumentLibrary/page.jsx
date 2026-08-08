@@ -67,9 +67,18 @@ export default function DocumentLibrary() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    console.log("save:", { file });
-    setForm((f) => ({ ...f, file_url: "", file_name: file.name }));
-    setUploading(false);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+      setForm((f) => ({ ...f, file_url: data.url, file_name: data.fileName || file.name }));
+    } catch (err) {
+      toast.error("Failed to upload file");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = () => {
