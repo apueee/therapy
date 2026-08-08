@@ -113,6 +113,53 @@ export async function createAssignment(data) {
   return { success: true, id: assignment.id };
 }
 
+export async function updateAssignment(id, data) {
+  const user = await requireRole("SUPERUSER", "ADMIN", "COORDINATOR", "THERAPIST");
+
+  const updateData = {};
+  if (data.status !== undefined) updateData.status = data.status.toUpperCase();
+  if (data.therapist_id !== undefined) updateData.therapistId = data.therapist_id;
+  if (data.therapist_name !== undefined) updateData.therapistName = data.therapist_name;
+  if (data.declined_by !== undefined) updateData.declinedBy = data.declined_by;
+  if (data.declined_reason !== undefined) updateData.declinedReason = data.declined_reason;
+  if (data.recalled_from !== undefined) updateData.recalledFrom = data.recalled_from;
+  if (data.approved_weekly_visits !== undefined) updateData.approvedWeeklyVisits = data.approved_weekly_visits;
+  if (data.assignment_history !== undefined) updateData.assignmentHistory = data.assignment_history;
+  if (data.eval_visit_note_id !== undefined) updateData.evalVisitNoteId = data.eval_visit_note_id;
+
+  await prisma.referralAssignment.update({ where: { id }, data: updateData });
+
+  const h = await headers();
+  await logAudit({
+    user,
+    action: "UPDATE",
+    resourceType: "ReferralAssignment",
+    resourceId: id,
+    details: `Updated assignment: ${JSON.stringify(data)}`,
+    ipAddress: getClientIp(h),
+  });
+
+  return { success: true };
+}
+
+export async function deleteAssignment(id) {
+  const user = await requireRole("SUPERUSER", "ADMIN", "COORDINATOR");
+
+  await prisma.referralAssignment.delete({ where: { id } });
+
+  const h = await headers();
+  await logAudit({
+    user,
+    action: "DELETE",
+    resourceType: "ReferralAssignment",
+    resourceId: id,
+    details: "Deleted referral assignment",
+    ipAddress: getClientIp(h),
+  });
+
+  return { success: true };
+}
+
 export async function createReferral(data) {
   const user = await requireRole("SUPERUSER", "ADMIN", "COORDINATOR");
 

@@ -1,12 +1,15 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Clock, Undo2, Trash2 } from "lucide-react";
+import { updateAssignment, deleteAssignment as deleteAssignmentAction } from "@/components/patients/referral-actions";
 
-export default function AdminAwaitingAcceptance({ assignments }) {
+export default function AdminAwaitingAcceptance({ assignments, onRefresh }) {
+  const [recalling, setRecalling] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const pendingAssignments = assignments.filter(a => a.status === "pending");
 
   const therapyColors = {
@@ -15,17 +18,40 @@ export default function AdminAwaitingAcceptance({ assignments }) {
     "Speech Therapy": "bg-amber-100 text-amber-700",
   };
 
-  // Mock mutations as no-ops
-  const recallAssignment = (assignment) => {
-    // mock no-op
+  const recallAssignment = async (assignment) => {
+    setRecalling(true);
+    try {
+      const history = [...(assignment.assignment_history || []), {
+        therapist_id: assignment.therapist_id,
+        therapist_name: assignment.therapist_name,
+        action: "recalled",
+        date: new Date().toISOString(),
+      }];
+      await updateAssignment(assignment.id, {
+        therapist_id: null,
+        therapist_name: null,
+        recalled_from: assignment.therapist_name,
+        assignment_history: history,
+      });
+      onRefresh?.();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setRecalling(false);
+    }
   };
 
-  const deleteAssignment = (assignmentId) => {
-    // mock no-op
+  const handleDelete = async (assignmentId) => {
+    setDeleting(true);
+    try {
+      await deleteAssignmentAction(assignmentId);
+      onRefresh?.();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDeleting(false);
+    }
   };
-
-  const recallAssignmentMutation = { mutate: recallAssignment, isPending: false };
-  const deleteAssignmentMutation = { mutate: deleteAssignment, isPending: false };
 
   return (
     <Card>
@@ -80,8 +106,8 @@ export default function AdminAwaitingAcceptance({ assignments }) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => recallAssignmentMutation.mutate(assignment)}
-                        disabled={recallAssignmentMutation.isPending}
+                        onClick={() => recallAssignment(assignment)}
+                        disabled={recalling}
                         className="h-8 gap-1 text-slate-600 hover:text-slate-900"
                       >
                         <Undo2 className="w-3.5 h-3.5" />
@@ -91,8 +117,8 @@ export default function AdminAwaitingAcceptance({ assignments }) {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => { if (confirm("Delete this assignment?")) deleteAssignmentMutation.mutate(assignment.id); }}
-                      disabled={deleteAssignmentMutation.isPending}
+                      onClick={() => { if (confirm("Delete this assignment?")) handleDelete(assignment.id); }}
+                      disabled={deleting}
                       className="h-8 w-8 text-red-400 hover:text-red-600 hover:bg-red-50"
                     >
                       <Trash2 className="w-3.5 h-3.5" />

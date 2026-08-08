@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { UserPlus, Trash2, AlertTriangle, History } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { updateAssignment, deleteAssignment as deleteAssignmentAction } from "@/components/patients/referral-actions";
 
 const therapyColors = {
   "Physical Therapy": "bg-teal-100 text-teal-700",
@@ -17,26 +18,48 @@ const therapyColors = {
   "Speech Therapy": "bg-amber-100 text-amber-700",
 };
 
-export default function AwaitingAssignment({ assignments, therapists = [] }) {
+export default function AwaitingAssignment({ assignments, therapists = [], onRefresh }) {
   const [assignDialog, setAssignDialog] = useState(null);
   const [selectedTherapistId, setSelectedTherapistId] = useState("");
+  const [assigning, setAssigning] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  // Pending assignments with no therapist assigned (recalled or never assigned)
   const unassigned = assignments.filter(
     (a) => a.status === "pending" && !a.therapist_id && !a.therapist_name
   );
 
-  // Mock mutations as no-ops
-  const assignMutation = { mutate: () => {}, isPending: false };
-  const deleteMutation = { mutate: () => {}, isPending: false };
-
-  const handleAssign = () => {
+  const handleAssign = async () => {
     if (!selectedTherapistId || !assignDialog) return;
     const therapist = therapists.find((t) => t.id === selectedTherapistId);
     if (!therapist) return;
-    // mock no-op
-    setAssignDialog(null);
-    setSelectedTherapistId("");
+    setAssigning(true);
+    try {
+      await updateAssignment(assignDialog.id, {
+        therapist_id: selectedTherapistId,
+        therapist_name: therapist.full_name,
+      });
+      onRefresh?.();
+      toast.success(`Assigned ${therapist.full_name} to ${assignDialog.patient_name}`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to assign therapist");
+    } finally {
+      setAssigning(false);
+      setAssignDialog(null);
+      setSelectedTherapistId("");
+    }
+  };
+
+  const handleDelete = async (id) => {
+    setDeleting(true);
+    try {
+      await deleteAssignmentAction(id);
+      onRefresh?.();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const openAssign = (assignment) => {
@@ -132,7 +155,7 @@ export default function AwaitingAssignment({ assignments, therapists = [] }) {
                       variant="ghost"
                       size="icon"
                       onClick={() => {
-                        if (confirm("Delete this assignment?")) deleteMutation.mutate(assignment.id);
+                        if (confirm("Delete this assignment?")) handleDelete(assignment.id);
                       }}
                       className="h-8 w-8 text-red-400 hover:text-red-600 hover:bg-red-50"
                     >
@@ -218,10 +241,10 @@ export default function AwaitingAssignment({ assignments, therapists = [] }) {
               <Button variant="outline" onClick={() => setAssignDialog(null)}>Cancel</Button>
               <Button
                 onClick={handleAssign}
-                disabled={!selectedTherapistId || assignMutation.isPending}
+                disabled={!selectedTherapistId || assigning}
                 className="bg-orange-600 hover:bg-orange-700"
               >
-                {assignMutation.isPending ? "Assigning..." : "Assign Therapist"}
+                {assigning ? "Assigning..." : "Assign Therapist"}
               </Button>
             </DialogFooter>
           </DialogContent>
