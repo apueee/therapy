@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DollarSign, FileText, Clock, CheckCircle2 } from "lucide-react";
 import { format, subMonths, differenceInDays } from "date-fns";
+import { getInvoices } from "@/app/(app)/Invoices/actions";
 
 const STATUS_COLORS = {
   draft:        "bg-slate-100 text-slate-600",
@@ -28,9 +29,15 @@ export default function AccountsReceivableReport() {
   const [dateFrom, setDateFrom] = useState(format(subMonths(new Date(), 6), "yyyy-MM-01"));
   const [dateTo, setDateTo]     = useState(format(new Date(), "yyyy-MM-dd"));
 
-  // MOCK: replace useQuery with empty array
-  const invoices = [];
-  const isLoading = false;
+  const [invoices, setInvoices] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    getInvoices()
+      .then(setInvoices)
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }, []);
 
   const today = new Date();
   const from  = new Date(dateFrom + "T00:00:00");

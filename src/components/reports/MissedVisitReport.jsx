@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -9,15 +9,22 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, subMonths } from "date-fns";
 import { AlertCircle } from "lucide-react";
+import { getCalendarVisits } from "@/app/(app)/VisitCalendar/actions";
 
 export default function MissedVisitReport() {
   const [dateFrom, setDateFrom] = useState(format(subMonths(new Date(), 1), "yyyy-MM-01"));
   const [dateTo, setDateTo]     = useState(format(new Date(), "yyyy-MM-dd"));
-  const [groupBy, setGroupBy]   = useState("agency"); // "agency" | "therapist"
+  const [groupBy, setGroupBy]   = useState("agency");
 
-  // MOCK: replace useQuery with empty array
-  const visits = [];
-  const isLoading = false;
+  const [visits, setVisits] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    getCalendarVisits()
+      .then(setVisits)
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }, []);
 
   const from = new Date(dateFrom + "T00:00:00");
   const to   = new Date(dateTo   + "T23:59:59");

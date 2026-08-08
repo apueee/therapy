@@ -1,20 +1,27 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { format, subMonths } from "date-fns";
 import { FileText, Building2 } from "lucide-react";
+import { getCalendarVisits } from "@/app/(app)/VisitCalendar/actions";
 
 export default function BilledVisitsReport() {
   const [dateFrom, setDateFrom] = useState(format(subMonths(new Date(), 1), "yyyy-MM-01"));
   const [dateTo, setDateTo] = useState(format(new Date(), "yyyy-MM-dd"));
 
-  // MOCK: replace useQuery with empty array
-  const visits = [];
-  const isLoading = false;
+  const [visits, setVisits] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    getCalendarVisits()
+      .then(setVisits)
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }, []);
 
   const from = new Date(dateFrom + "T00:00:00");
   const to = new Date(dateTo + "T23:59:59");
