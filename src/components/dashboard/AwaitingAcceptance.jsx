@@ -11,6 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { ClipboardList, Check, X, Calendar, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { updateAssignment } from "@/components/patients/referral-actions";
+import { saveVisitNote } from "@/app/(app)/VisitNotes/actions";
 
 const therapyColors = {
   "Physical Therapy": "bg-teal-100 text-teal-700",
@@ -46,7 +48,7 @@ function formatSentAt(dateStr) {
   });
 }
 
-export default function AwaitingAcceptance({ assignments, user, therapistId, patients }) {
+export default function AwaitingAcceptance({ assignments, user, therapistId, patients, onRefresh }) {
   const [viewDialog, setViewDialog] = useState(null);
   const [declineDialog, setDeclineDialog] = useState(null);
   const [declineReason, setDeclineReason] = useState("");
@@ -69,11 +71,20 @@ export default function AwaitingAcceptance({ assignments, user, therapistId, pat
       a.status === "accepted"
   );
 
-  const updateAssignmentMutation = { mutate: () => {}, isPending: false };
-  const createVisitsMutation = { mutate: () => {}, isPending: false };
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleAcceptOnly = (assignment) => {
-    // mock no-op
+  const handleAcceptOnly = async (assignment) => {
+    setSubmitting(true);
+    try {
+      await updateAssignment(assignment.id, { status: "accepted" });
+      toast.success(`Accepted referral for ${assignment.patient_name}`);
+      onRefresh?.();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to accept assignment");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const openScheduleDialog = (assignment) => {
@@ -102,42 +113,100 @@ export default function AwaitingAcceptance({ assignments, user, therapistId, pat
   const outside48h = scheduleDialog ? isOutside48h(allScheduledDates, scheduleDialog.created_date) : false;
   const totalScheduledVisits = weekSchedule ? weekSchedule.reduce((s, w) => s + w.approved_visits, 0) : 1;
 
-  const handleSchedule = () => {
+  const handleSchedule = async () => {
     if (!scheduleDialog) return;
     if (outside48h && !delayReason.trim()) {
       toast.error("Please provide a reason for the delay before scheduling.");
       return;
     }
-    if (weekSchedule) {
-      for (let wi = 0; wi < weekSchedule.length; wi++) {
-        const week = weekSchedule[wi];
-        for (let di = 0; di < week.dates.length; di++) {
-          if (!week.dates[di]) {
-            toast.error(`Please fill all dates for ${week.week_label || `Week ${wi + 1}`}`);
-            return;
-          }
-          if (week.week_start && week.week_end && !isDateInWeek(week.dates[di], week.week_start, week.week_end)) {
-            toast.error(`Date for ${week.week_label || `Week ${wi + 1}`} visit ${di + 1} must be within ${week.week_start} – ${week.week_end}`);
-            return;
+    setSubmitting(true);
+    try {
+      if (weekSchedule) {
+        for (let wi = 0; wi < weekSchedule.length; wi++) {
+          const week = weekSchedule[wi];
+          for (let di = 0; di < week.dates.length; di++) {
+            if (!week.dates[di]) {
+              toast.error(`Please fill all dates for ${week.week_label || `Week ${wi + 1}`}`);
+              setSubmitting(false);
+              return;
+            }
+            if (week.week_start && week.week_end && !isDateInWeek(week.dates[di], week.week_start, week.week_end)) {
+              toast.error(`Date for ${week.week_label || `Week ${wi + 1}`} visit ${di + 1} must be within ${week.week_start} – ${week.week_end}`);
+              setSubmitting(false);
+              return;
+            }
           }
         }
+        const allDates = weekSchedule.flatMap(w => w.dates);
+        for (const date of allDates) {
+          await saveVisitNote({
+            patient_id: scheduleDialog.patient_id,
+            patient_name: scheduleDialog.patient_name,
+            therapist_id: scheduleDialog.therapist_id || therapistId,
+            therapist_name: scheduleDialog.therapist_name || user?.full_name,
+            therapy_type: scheduleDialog.therapy_type,
+            visit_type: "treatment",
+            visit_date: date,
+            status: "scheduled",
+            agency: scheduleDialog.agency,
+          });
+        }
+        await updateAssignment(scheduleDialog.id, { status: "scheduled" });
+      } else {
+        if (!singleDate) { setSubmitting(false); return; }
+        await saveVisitNote({
+          patient_id: scheduleDialog.patient_id,
+          patient_name: scheduleDialog.patient_name,
+          therapist_id: scheduleDialog.therapist_id || therapistId,
+          therapist_name: scheduleDialog.therapist_name || user?.full_name,
+          therapy_type: scheduleDialog.therapy_type,
+          visit_type: scheduleDialog.visit_type || "evaluation",
+          visit_date: singleDate,
+          status: "scheduled",
+          agency: scheduleDialog.agency,
+        });
+        await updateAssignment(scheduleDialog.id, { status: "scheduled" });
       }
-      // mock no-op
+      toast.success("Visits scheduled successfully");
+      onRefresh?.();
       setScheduleDialog(null);
-    } else {
-      if (!singleDate) return;
-      // mock no-op
-      setScheduleDialog(null);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to schedule visits");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleDecline = () => {
+  const handleDecline = async () => {
     if (!declineDialog) return;
     if (!declineReason.trim()) { setDeclineRequired(true); return; }
-    // mock no-op
-    setDeclineDialog(null);
-    setDeclineReason("");
-    setDeclineRequired(false);
+    setSubmitting(true);
+    try {
+      const history = [...(declineDialog.assignment_history || []), {
+        therapist_id: declineDialog.therapist_id,
+        therapist_name: declineDialog.therapist_name,
+        action: "declined",
+        reason: declineReason,
+        date: new Date().toISOString(),
+      }];
+      await updateAssignment(declineDialog.id, {
+        status: "declined",
+        declined_by: user?.full_name,
+        declined_reason: declineReason,
+        assignment_history: history,
+      });
+      toast.success("Referral declined and returned to admin");
+      onRefresh?.();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to decline assignment");
+    } finally {
+      setSubmitting(false);
+      setDeclineDialog(null);
+      setDeclineReason("");
+      setDeclineRequired(false);
+    }
   };
 
   const getPatient = (patientId) => patients.find((p) => p.id === patientId);
@@ -214,7 +283,7 @@ export default function AwaitingAcceptance({ assignments, user, therapistId, pat
                         </Button>
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <Button size="sm" onClick={() => handleAcceptOnly(assignment)} disabled={updateAssignmentMutation.isPending} className="bg-green-600 hover:bg-green-700 gap-1 w-full">
+                        <Button size="sm" onClick={() => handleAcceptOnly(assignment)} disabled={submitting} className="bg-green-600 hover:bg-green-700 gap-1 w-full">
                           <Check className="w-3.5 h-3.5" /> Accept
                         </Button>
                         <Button size="sm" onClick={() => openScheduleDialog(assignment)} className="bg-teal-600 hover:bg-teal-700 gap-1 w-full">
@@ -412,9 +481,9 @@ export default function AwaitingAcceptance({ assignments, user, therapistId, pat
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setScheduleDialog(null)}>Cancel</Button>
-              <Button onClick={handleSchedule} disabled={createVisitsMutation.isPending} className="bg-green-600 hover:bg-green-700 gap-2">
+              <Button onClick={handleSchedule} disabled={submitting} className="bg-green-600 hover:bg-green-700 gap-2">
                 <Calendar className="w-4 h-4" />
-                {createVisitsMutation.isPending ? "Scheduling..." : `Schedule ${totalScheduledVisits} Visit${totalScheduledVisits !== 1 ? "s" : ""}`}
+                {submitting ? "Scheduling..." : `Schedule ${totalScheduledVisits} Visit${totalScheduledVisits !== 1 ? "s" : ""}`}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -536,8 +605,8 @@ export default function AwaitingAcceptance({ assignments, user, therapistId, pat
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => { setDeclineDialog(null); setDeclineRequired(false); }}>Cancel</Button>
-              <Button onClick={handleDecline} disabled={updateAssignmentMutation.isPending} variant="destructive">
-                {updateAssignmentMutation.isPending ? "Declining..." : "Decline & Return to Admin"}
+              <Button onClick={handleDecline} disabled={submitting} variant="destructive">
+                {submitting ? "Declining..." : "Decline & Return to Admin"}
               </Button>
             </DialogFooter>
           </DialogContent>
