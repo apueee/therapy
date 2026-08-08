@@ -92,10 +92,14 @@ export async function createAssignment(data) {
       patientName: data.patient_name,
       therapistId: data.therapist_id || null,
       therapistName: therapist?.fullName || data.therapist_name || null,
+      supervisingTherapistId: data.supervising_therapist_id || null,
+      supervisingTherapistName: data.supervising_therapist_name || null,
       therapyType: DISCIPLINE_ENUM[data.therapy_type] || data.therapy_type,
       visitType: (data.visit_type || "evaluation").toUpperCase(),
       agency: data.agency || null,
       status: "PENDING",
+      approvedWeeklyVisits: data.approved_weekly_visits || [],
+      evalVisitNoteId: data.eval_visit_note_id || null,
     },
   });
 

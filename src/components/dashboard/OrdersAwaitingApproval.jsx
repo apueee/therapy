@@ -11,6 +11,8 @@ import { ClipboardCheck, CheckCircle, Eye, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
 import { toast } from "sonner";
+import { createAssignment } from "@/components/patients/referral-actions";
+import { saveVisitNote } from "@/app/(app)/VisitNotes/actions";
 
 const therapyColor = {
   "Physical Therapy": "bg-blue-100 text-blue-700",
@@ -20,11 +22,12 @@ const therapyColor = {
 
 const PTA_COTA = ["PTA", "COTA"];
 
-export default function OrdersAwaitingApproval({ visits, therapists = [], agencies = [] }) {
+export default function OrdersAwaitingApproval({ visits, therapists = [], agencies = [], onRefresh }) {
   const [approveDialog, setApproveDialog] = useState(null);
   const [approvedVisits, setApprovedVisits] = useState([]);
   const [treatingTherapistId, setTreatingTherapistId] = useState("");
   const [supervisingTherapistId, setSupervisingTherapistId] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const pendingEvals = visits.filter(
     (v) =>
@@ -51,8 +54,51 @@ export default function OrdersAwaitingApproval({ visits, therapists = [], agenci
     });
   };
 
-  // Mock mutation as no-op
-  const approveMutation = { mutate: () => {}, isPending: false };
+  const handleApprove = async (visit) => {
+    if (!treatingTherapistId) return;
+    setSubmitting(true);
+    try {
+      const treatingTherapist = therapists.find(t => t.id === treatingTherapistId);
+      const supervisingTherapist = supervisingTherapistId
+        ? therapists.find(t => t.id === supervisingTherapistId)
+        : null;
+
+      await saveVisitNote({
+        id: visit.id,
+        treatment_approved: true,
+        treatment_approved_date: new Date().toISOString(),
+      });
+
+      await createAssignment({
+        patient_id: visit.patient_id,
+        patient_name: visit.patient_name,
+        therapist_id: treatingTherapistId,
+        therapist_name: treatingTherapist?.full_name,
+        therapy_type: visit.therapy_type,
+        visit_type: "treatment",
+        agency: visit.agency,
+        approved_weekly_visits: approvedVisits.map(w => ({
+          week_label: w.week_label,
+          week_start: w.week_start,
+          week_end: w.week_end,
+          requested_visits: w.visits,
+          approved_visits: Number(w.approved_visits) || 0,
+        })),
+        supervising_therapist_id: supervisingTherapist?.id || null,
+        supervising_therapist_name: supervisingTherapist?.full_name || null,
+        eval_visit_note_id: visit.id,
+      });
+
+      toast.success(`Treatment orders approved for ${visit.patient_name}`);
+      onRefresh?.();
+      setApproveDialog(null);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to approve orders");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <>
@@ -221,12 +267,12 @@ export default function OrdersAwaitingApproval({ visits, therapists = [], agenci
                 Cancel
               </Button>
               <Button
-                onClick={() => approveMutation.mutate(approveDialog)}
-                disabled={!treatingTherapistId || approveMutation.isPending}
+                onClick={() => handleApprove(approveDialog)}
+                disabled={!treatingTherapistId || submitting}
                 className="bg-teal-600 hover:bg-teal-700"
               >
                 <CheckCircle className="w-4 h-4 mr-2" />
-                {approveMutation.isPending ? "Approving..." : "Approve & Assign"}
+                {submitting ? "Approving..." : "Approve & Assign"}
               </Button>
             </DialogFooter>
           </DialogContent>
