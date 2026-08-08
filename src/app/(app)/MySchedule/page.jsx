@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useCurrentUser } from "@/components/layout/UserContext";
+import { getCalendarVisits, getTherapistsForSchedule } from "@/app/(app)/VisitCalendar/actions";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,16 +27,32 @@ const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 export default function MySchedule() {
   const [weekStart, setWeekStart] = useState(startOfWeek(new Date()));
 
-  const currentUser = { role: "therapist", user_type: "therapist", full_name: "User", email: "user@example.com" };
+  const currentUser = useCurrentUser();
 
-  const allTherapists = [];
+  const [allTherapists, setAllTherapists] = useState([]);
+  const [visits, setVisits] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadData = useCallback(async () => {
+    try {
+      const [visitsData, therapistsData] = await Promise.all([
+        getCalendarVisits(),
+        getTherapistsForSchedule(),
+      ]);
+      setVisits(visitsData);
+      setAllTherapists(therapistsData);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const myTherapistRecord = allTherapists.find(
     t => t.email === currentUser?.email || t.full_name?.toLowerCase() === currentUser?.full_name?.toLowerCase()
   );
-
-  const visits = [];
-  const isLoading = false;
 
   const weekEnd = endOfWeek(weekStart);
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });

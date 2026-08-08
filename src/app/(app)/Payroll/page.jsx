@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useCurrentUser } from "@/components/layout/UserContext";
+import { getPayrollData } from "./actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,11 +51,22 @@ export default function Payroll() {
   const selectAll = () => setSelectedTherapistIds(therapists.map((t) => t.id));
   const clearAll = () => setSelectedTherapistIds([]);
 
-  const therapists = [];
+  const [therapists, setTherapists] = useState([]);
+  const [patients, setPatients] = useState([]);
+  const [allVisits, setAllVisits] = useState([]);
 
-  const patients = [];
+  const loadData = useCallback(async () => {
+    try {
+      const data = await getPayrollData();
+      setTherapists(data.therapists);
+      setPatients(data.patients);
+      setAllVisits(data.visits);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
 
-  const allVisits = [];
+  useEffect(() => { if (isAdmin) loadData(); }, [isAdmin, loadData]);
 
   if (!isAdmin) {
     return (

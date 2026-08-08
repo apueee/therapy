@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { getCalendarVisits } from "@/app/(app)/VisitCalendar/actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -59,8 +60,21 @@ export default function Orders() {
   const urlParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
   const defaultTab = urlParams.get("tab") || "deletions";
 
-  const visits = [];
-  const isLoading = false;
+  const [visits, setVisits] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadVisits = useCallback(async () => {
+    try {
+      const data = await getCalendarVisits();
+      setVisits(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadVisits(); }, [loadVisits]);
 
   const evalOrders = visits.filter((v) => v.visit_type === "evaluation" && (v.status === "completed" || v.status === "signed"));
   const recertOrders = visits.filter((v) => v.visit_type === "re_evaluation" && (v.status === "completed" || v.status === "signed"));

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useCurrentUser } from "@/components/layout/UserContext";
+import { getReportsData } from "./actions";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -52,9 +53,22 @@ function ReportsContent() {
   const [dateFrom, setDateFrom] = useState(format(subMonths(new Date(), 5), "yyyy-MM-01"));
   const [dateTo, setDateTo] = useState(format(new Date(), "yyyy-MM-dd"));
 
-  const visits = [];
-  const patients = [];
-  const therapists = [];
+  const [visits, setVisits] = useState([]);
+  const [patients, setPatients] = useState([]);
+  const [therapists, setTherapists] = useState([]);
+
+  const loadData = useCallback(async () => {
+    try {
+      const data = await getReportsData();
+      setVisits(data.visits);
+      setPatients(data.patients);
+      setTherapists(data.therapists);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  useEffect(() => { if (isAdmin) loadData(); }, [isAdmin, loadData]);
 
   if (!isAdmin) {
     return (

@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { getWeeklyCloseData } from "@/app/(app)/VisitCalendar/actions";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,11 +22,24 @@ const STATUS_COLORS = {
 };
 
 export default function WeeklyClose() {
-  const draftNotes = [];
-  const unsignedNotes = [];
-  const pendingAssignments = [];
-  const acceptedNotScheduled = [];
-  const myTasks = [];
+  const [draftNotes, setDraftNotes] = useState([]);
+  const [unsignedNotes, setUnsignedNotes] = useState([]);
+  const [pendingAssignments, setPendingAssignments] = useState([]);
+  const [acceptedNotScheduled, setAcceptedNotScheduled] = useState([]);
+  const [myTasks, setMyTasks] = useState([]);
+
+  const loadData = useCallback(async () => {
+    try {
+      const data = await getWeeklyCloseData();
+      setDraftNotes(data.draftNotes || []);
+      setUnsignedNotes(data.unsignedNotes || []);
+      setMyTasks(data.myTasks || []);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const totalOutstanding =
     draftNotes.length +

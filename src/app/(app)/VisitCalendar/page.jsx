@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { getCalendarVisits } from "./actions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Filter, X as XIcon, Download, Calendar, CalendarDays, ChevronLeft, ChevronRight, X } from "lucide-react";
 import {
@@ -65,7 +66,18 @@ export default function VisitCalendar() {
   };
   const clearSelection = () => setSelectedDays([]);
 
-  const visits = [];
+  const [visits, setVisits] = useState([]);
+
+  const loadVisits = useCallback(async () => {
+    try {
+      const data = await getCalendarVisits();
+      setVisits(data);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  useEffect(() => { loadVisits(); }, [loadVisits]);
 
   const filteredVisits = useMemo(() => visits.filter((v) => {
     if (filterTherapist !== "all" && v.therapist_name !== filterTherapist) return false;
