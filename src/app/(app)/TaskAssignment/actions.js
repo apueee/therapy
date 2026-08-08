@@ -97,6 +97,73 @@ export async function updateTaskStatus(id, status) {
   return { success: true };
 }
 
+export async function updateTask(id, data) {
+  const user = await requireAuth();
+
+  const updateData = {};
+  if (data.status !== undefined) updateData.status = data.status.toUpperCase();
+  if (data.notes !== undefined) updateData.notes = data.notes;
+  if (data.completed_date !== undefined) updateData.completedDate = data.completed_date ? new Date(data.completed_date) : null;
+  if (data.escalation_data !== undefined) updateData.escalationData = data.escalation_data;
+
+  await prisma.task.update({ where: { id }, data: updateData });
+
+  const h = await headers();
+  await logAudit({
+    user,
+    action: "UPDATE",
+    resourceType: "Task",
+    resourceId: id,
+    details: `Task updated: ${Object.keys(updateData).join(", ")}`,
+    ipAddress: getClientIp(h),
+  });
+
+  return { success: true };
+}
+
+export async function escalateTask({ taskId, escalatedTo, escalatedToName, reason, followUpDate, createdByEmail, createdByName }) {
+  const user = await requireAuth();
+
+  await prisma.task.update({
+    where: { id: taskId },
+    data: {
+      status: "ESCALATED",
+      escalationData: {
+        escalatedTo,
+        escalatedToName,
+        reason,
+        escalationDate: new Date().toISOString().split("T")[0],
+        followUpDate,
+      },
+    },
+  });
+
+  const followUp = await prisma.task.create({
+    data: {
+      title: `Follow up escalated task`,
+      description: `Escalated to: ${escalatedToName} (${escalatedTo}). Reason: ${reason}`,
+      assignedTo: createdByEmail,
+      assignedToName: createdByName || null,
+      dueDate: followUpDate ? new Date(followUpDate) : null,
+      priority: "HIGH",
+      status: "PENDING",
+      isDailyRecurring: false,
+    },
+  });
+
+  const h = await headers();
+  await logAudit({
+    user,
+    action: "UPDATE",
+    resourceType: "Task",
+    resourceId: taskId,
+    details: `Task escalated to ${escalatedToName}. Follow-up task created.`,
+    ipAddress: getClientIp(h),
+  });
+
+  return { success: true, followUpId: followUp.id };
+}
+
 export async function deleteTask(id) {
   const user = await requireRole("SUPERUSER", "ADMIN");
 

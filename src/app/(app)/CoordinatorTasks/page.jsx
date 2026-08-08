@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useCurrentUser } from "@/components/layout/UserContext";
-import { getMyTasks, createTask, updateTaskStatus, deleteTask, getUsersForSelect } from "@/app/(app)/TaskAssignment/actions";
+import { getMyTasks, createTask, updateTask, updateTaskStatus, escalateTask, deleteTask, getUsersForSelect } from "@/app/(app)/TaskAssignment/actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -69,7 +69,11 @@ export default function CoordinatorTasks() {
 
   const handleUpdate = async ({ id, data }) => {
     try {
-      await updateTaskStatus(id, data.status);
+      await updateTask(id, {
+        status: data.status,
+        notes: data.notes,
+        completed_date: data.completed_date,
+      });
       toast.success("Task updated");
       loadData();
     } catch (err) {
@@ -105,28 +109,24 @@ export default function CoordinatorTasks() {
   };
 
   const handleEscalateTask = async ({ task, escalatedTo, escalatedToName, reason, followUpDate }) => {
-    console.log("save:", {
-      update: {
-        id: task.id,
-        status: "escalated",
-        escalated_to: escalatedTo,
-        escalated_to_name: escalatedToName,
-        escalation_reason: reason,
-        escalation_date: format(new Date(), "yyyy-MM-dd"),
-        follow_up_date: followUpDate,
-      },
-      create: {
-        title: `Follow up: ${task.title}`,
-        description: `Follow up on escalated task. Escalated to: ${escalatedToName} (${escalatedTo}). Reason: ${reason}`,
-        assigned_to: effectiveUser?.email,
-        assigned_to_name: effectiveUser?.full_name,
-        due_date: followUpDate,
-        priority: "high",
-        is_daily_recurring: false,
-      },
-    });
-    setEscalateTask(null);
-    toast.success("Task escalated and follow-up reminder created");
+    try {
+      const result = await escalateTask({
+        taskId: task.id,
+        escalatedTo,
+        escalatedToName,
+        reason,
+        followUpDate,
+        createdByEmail: effectiveUser?.email,
+        createdByName: effectiveUser?.full_name,
+      });
+      if (result?.success) {
+        setEscalateTask(null);
+        toast.success("Task escalated and follow-up reminder created");
+        loadData();
+      }
+    } catch (err) {
+      toast.error("Failed to escalate task");
+    }
   };
 
   const markComplete = (task) => {
