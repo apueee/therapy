@@ -156,153 +156,137 @@ export default function EditReferralForm({ onUpdate, preselectedPatientId }) {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>First Name</Label>
-                <Input
-                  value={form.first_name}
-                  onChange={(e) => set("first_name", e.target.value)}
-                  className="mt-1"
-                />
+                <Label>First Name *</Label>
+                <Input value={form.first_name} onChange={(e) => set("first_name", e.target.value)} />
               </div>
               <div>
-                <Label>Last Name</Label>
-                <Input
-                  value={form.last_name}
-                  onChange={(e) => set("last_name", e.target.value)}
-                  className="mt-1"
-                />
+                <Label>Last Name *</Label>
+                <Input value={form.last_name} onChange={(e) => set("last_name", e.target.value)} />
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label>Date of Birth</Label>
-                <Input
-                  type="date"
-                  value={form.date_of_birth}
-                  onChange={(e) => set("date_of_birth", e.target.value)}
-                  className="mt-1"
-                />
+                <Input type="date" value={form.date_of_birth} onChange={(e) => set("date_of_birth", e.target.value)} />
               </div>
               <div>
                 <Label>Phone</Label>
-                <Input
-                  value={form.phone}
-                  onChange={(e) => set("phone", e.target.value)}
-                  className="mt-1"
-                />
+                <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} />
               </div>
               <div>
                 <Label>City</Label>
-                <Input
-                  value={form.city}
-                  onChange={(e) => set("city", e.target.value)}
-                  className="mt-1"
-                />
+                <Input value={form.city} onChange={(e) => set("city", e.target.value)} />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Primary Diagnosis</Label>
-                <Input
-                  value={form.diagnosis}
-                  onChange={(e) => set("diagnosis", e.target.value)}
-                  className="mt-1"
-                />
+                <Input value={form.diagnosis} onChange={(e) => set("diagnosis", e.target.value)} />
               </div>
               <div>
                 <Label>Insurance</Label>
-                <Input
-                  value={form.insurance}
-                  onChange={(e) => set("insurance", e.target.value)}
-                  className="mt-1"
-                />
+                <Input value={form.insurance} onChange={(e) => set("insurance", e.target.value)} />
               </div>
             </div>
 
             <div>
-              <Label>Therapy Types</Label>
+              <Label>Therapy Types *</Label>
               <div className="flex gap-6 mt-2">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    checked={form.therapy_types.includes("Physical Therapy")}
-                    onCheckedChange={() => toggleTherapyType("Physical Therapy")}
-                  />
-                  <span className="text-sm">Physical Therapy</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    checked={form.therapy_types.includes("Occupational Therapy")}
-                    onCheckedChange={() => toggleTherapyType("Occupational Therapy")}
-                  />
-                  <span className="text-sm">Occupational Therapy</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    checked={form.therapy_types.includes("Speech Therapy")}
-                    onCheckedChange={() => toggleTherapyType("Speech Therapy")}
-                  />
-                  <span className="text-sm">Speech Therapy</span>
-                </div>
+                {["Physical Therapy", "Occupational Therapy", "Speech Therapy"].map((type) => (
+                  <div key={type} className="flex items-center gap-2">
+                    <Checkbox
+                      id={type}
+                      checked={form.therapy_types.includes(type)}
+                      onCheckedChange={() => toggleTherapyType(type)}
+                    />
+                    <label htmlFor={type} className="text-sm cursor-pointer">
+                      {type}
+                    </label>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="border rounded-lg p-4 bg-slate-50">
+            <div className="border rounded-lg p-4 space-y-4 bg-slate-50">
               <Label className="text-base font-semibold">Therapy Orders</Label>
-              <div className="grid grid-cols-2 gap-4 mt-3">
-                <div>
-                  <Label>PT Eval Visits</Label>
-                  <Input
-                    type="number"
-                    value={form.pt_eval_visits}
-                    onChange={(e) => set("pt_eval_visits", e.target.value)}
-                    className="mt-1"
-                  />
+
+              <div className="space-y-3">
+                <Label className="text-sm font-medium text-teal-700">Physical Therapy</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-slate-600">Eval Visits</Label>
+                    <Input
+                      type="number"
+                      value={form.pt_eval_visits}
+                      onChange={(e) => set("pt_eval_visits", e.target.value)}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-slate-600">Treatment Visits</Label>
+                    <Input
+                      type="number"
+                      value={form.pt_treatment_visits}
+                      onChange={(e) => set("pt_treatment_visits", e.target.value)}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label>PT Treatment Visits</Label>
-                  <Input
-                    type="number"
-                    value={form.pt_treatment_visits}
-                    onChange={(e) => set("pt_treatment_visits", e.target.value)}
-                    className="mt-1"
-                  />
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-sm font-medium text-purple-700">Occupational Therapy</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-slate-600">Eval Visits</Label>
+                    <Input
+                      type="number"
+                      value={form.ot_eval_visits}
+                      onChange={(e) => set("ot_eval_visits", e.target.value)}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-slate-600">Treatment Visits</Label>
+                    <Input
+                      type="number"
+                      value={form.ot_treatment_visits}
+                      onChange={(e) => set("ot_treatment_visits", e.target.value)}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label>OT Eval Visits</Label>
-                  <Input
-                    type="number"
-                    value={form.ot_eval_visits}
-                    onChange={(e) => set("ot_eval_visits", e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label>OT Treatment Visits</Label>
-                  <Input
-                    type="number"
-                    value={form.ot_treatment_visits}
-                    onChange={(e) => set("ot_treatment_visits", e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label>ST Eval Visits</Label>
-                  <Input
-                    type="number"
-                    value={form.st_eval_visits}
-                    onChange={(e) => set("st_eval_visits", e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label>ST Treatment Visits</Label>
-                  <Input
-                    type="number"
-                    value={form.st_treatment_visits}
-                    onChange={(e) => set("st_treatment_visits", e.target.value)}
-                    className="mt-1"
-                  />
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-sm font-medium text-amber-700">Speech Therapy</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-slate-600">Eval Visits</Label>
+                    <Input
+                      type="number"
+                      value={form.st_eval_visits}
+                      onChange={(e) => set("st_eval_visits", e.target.value)}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-slate-600">Treatment Visits</Label>
+                    <Input
+                      type="number"
+                      value={form.st_treatment_visits}
+                      onChange={(e) => set("st_treatment_visits", e.target.value)}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -310,14 +294,10 @@ export default function EditReferralForm({ onUpdate, preselectedPatientId }) {
             <div>
               <Label>Agency</Label>
               <Select value={form.agency} onValueChange={(v) => set("agency", v)}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select agency" />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Select agency" /></SelectTrigger>
                 <SelectContent>
                   {agencies.map((a) => (
-                    <SelectItem key={a.id} value={a.name}>
-                      {a.name}
-                    </SelectItem>
+                    <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -325,62 +305,41 @@ export default function EditReferralForm({ onUpdate, preselectedPatientId }) {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Cert Period Start</Label>
-                <Input
-                  type="date"
-                  value={form.cert_period_start}
-                  onChange={(e) => set("cert_period_start", e.target.value)}
-                  className="mt-1"
-                />
+                <Label>Certification Period Start</Label>
+                <Input type="date" value={form.cert_period_start} onChange={(e) => set("cert_period_start", e.target.value)} />
               </div>
               <div>
-                <Label>Cert Period End</Label>
-                <Input
-                  type="date"
-                  value={form.cert_period_end}
-                  onChange={(e) => set("cert_period_end", e.target.value)}
-                  className="mt-1"
-                />
+                <Label>Certification Period End</Label>
+                <Input type="date" value={form.cert_period_end} onChange={(e) => set("cert_period_end", e.target.value)} />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Authorization Number</Label>
-                <Input
-                  value={form.authorization_number}
-                  onChange={(e) => set("authorization_number", e.target.value)}
-                  className="mt-1"
-                />
+                <Input value={form.authorization_number} onChange={(e) => set("authorization_number", e.target.value)} placeholder="Auth #" />
               </div>
               <div>
                 <Label>Authorized Visits</Label>
-                <Input
-                  type="number"
-                  value={form.authorized_visits}
-                  onChange={(e) => set("authorized_visits", e.target.value)}
-                  className="mt-1"
-                />
+                <Input type="number" value={form.authorized_visits} onChange={(e) => set("authorized_visits", e.target.value)} placeholder="Number of visits" />
               </div>
             </div>
 
             <div>
               <Label>Notes</Label>
-              <Textarea
-                value={form.notes}
-                onChange={(e) => set("notes", e.target.value)}
-                placeholder="Additional notes..."
-                className="mt-1"
-                rows={4}
-              />
+              <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={4} placeholder="Additional referral information..." />
             </div>
 
-            <div className="flex justify-end gap-3 pt-4">
+            <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={handleCancel}>
                 Cancel
               </Button>
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? "Saving..." : "Save Changes"}
+              <Button
+                onClick={handleSave}
+                disabled={saving || !form.first_name || !form.last_name || form.therapy_types.length === 0}
+                className="bg-teal-600 hover:bg-teal-700"
+              >
+                {saving ? "Saving..." : "Update Referral"}
               </Button>
             </div>
           </CardContent>

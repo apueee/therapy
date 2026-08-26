@@ -12,7 +12,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FileText, DollarSign } from "lucide-react";
 import { getAgenciesForInvoice, getCompletedVisitsForInvoice, createInvoice } from "@/app/(app)/Invoices/actions";
-import { toast } from "sonner";
 
 const VISIT_TYPE_LABELS = {
   evaluation: "Evaluation",
@@ -104,35 +103,30 @@ export default function CreateInvoiceForm({ onSaved, initialAgencyId = "", initi
   const handleSave = async () => {
     if (!agencyId || selectedVisits.length === 0) return;
     setSaving(true);
-    try {
-      const lineItems = selectedVisits.map((v) => ({
-        visit_note_id: v.id,
-        patient_name: v.patient_name,
-        visit_date: v.visit_date,
-        therapy_type: v.therapy_type,
-        visit_type: v.visit_type || "treatment",
-        therapist_name: v.therapist_name,
-        rate: getEffectiveRate(v),
-        quantity: 1,
-        subtotal: getEffectiveRate(v),
-      }));
-      const result = await createInvoice({
-        agency_id: agencyId,
-        date_from: dateFrom,
-        date_to: dateTo,
-        total_amount: totalAmount,
-        notes: notes || null,
-        line_items: lineItems,
-      });
-      if (result?.success) {
-        toast.success("Invoice created");
-        onSaved();
-      }
-    } catch (err) {
-      toast.error("Failed to create invoice");
-    } finally {
-      setSaving(false);
-    }
+
+    const lineItems = selectedVisits.map((v) => ({
+      visit_note_id: v.id,
+      patient_name: v.patient_name,
+      visit_date: v.visit_date,
+      therapy_type: v.therapy_type,
+      visit_type: v.visit_type || "treatment",
+      therapist_name: v.therapist_name,
+      rate: getEffectiveRate(v),
+      quantity: 1,
+      subtotal: getEffectiveRate(v),
+    }));
+
+    await createInvoice({
+      agency_id: agencyId,
+      date_from: dateFrom,
+      date_to: dateTo,
+      total_amount: totalAmount,
+      notes: notes || null,
+      line_items: lineItems,
+    });
+
+    setSaving(false);
+    onSaved();
   };
 
   return (

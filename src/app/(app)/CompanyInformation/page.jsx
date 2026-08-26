@@ -72,8 +72,18 @@ export default function CompanyInformation() {
   const handleLogoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    setFormData({ ...formData, logo_url: url });
+
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body });
+      if (!res.ok) throw new Error("Upload failed");
+      const { url } = await res.json();
+      setFormData({ ...formData, logo_url: url });
+      toast.success('Logo uploaded');
+    } catch (error) {
+      toast.error('Failed to upload logo');
+    }
   };
 
   return (

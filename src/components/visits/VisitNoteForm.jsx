@@ -236,6 +236,19 @@ export default function VisitNoteForm({ patients = [], therapists = [], agencies
     else if (form.visit_type === "evaluation") set("visit_type", "treatment");
   }, [form.patient_id, form.therapy_type, patientVisits.length]);
 
+  const handlePDFUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPDF(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      set("pdf_template_url", data.url);
+    } catch (error) { alert("Failed to upload PDF template"); } finally { setUploadingPDF(false); }
+  };
+
   const handleSave = async (status) => {
     const isLocked = form.status === "completed" || form.status === "signed";
     if (isLocked && !isAdmin) { alert("This visit note is locked. Only administrators can unlock it for editing."); return; }
@@ -318,28 +331,28 @@ export default function VisitNoteForm({ patients = [], therapists = [], agencies
     }
     if (tab === "Subjective" && form.visit_type === "evaluation") {
       const req = (v) => (v || "").trim().length >= 2;
-      if (!req(form.medical_history)) errors.push("Medical History is required");
-      if (!req(form.past_surgical_history)) errors.push("Past Surgical History is required");
-      if (!req(form.subjective)) errors.push("Reason for Referral is required");
-      if (!req(form.prior_function)) errors.push("Prior Level of Function is required");
-      if (!req(form.living_environment)) errors.push("Living Environment is required");
+      if (!req(form.medical_history)) errors.push("Medical History is required (min 2 characters, 'NA' accepted)");
+      if (!req(form.past_surgical_history)) errors.push("Past Surgical History is required (min 2 characters, 'NA' accepted)");
+      if (!req(form.subjective)) errors.push("Reason for Referral is required (min 2 characters, 'NA' accepted)");
+      if (!req(form.prior_function)) errors.push("Prior Level of Function is required (min 2 characters, 'NA' accepted)");
+      if (!req(form.living_environment)) errors.push("Living Environment is required (min 2 characters, 'NA' accepted)");
       if (form.therapy_type === "Physical Therapy" || form.therapy_type === "Occupational Therapy") {
         const homeboundCount = (form.homebound_reasons || []).length + (form.homebound_other !== undefined && form.homebound_other !== null ? 1 : 0);
-        if (homeboundCount < 2) errors.push("Homebound Reason requires at least 2 options");
+        if (homeboundCount < 2) errors.push("Homebound Reason requires at least 2 options to be selected");
       }
-      if (!req(form.therapy_objective_patient_goals)) errors.push("Patient / Caregiver Goals is required");
-      if (!req(form.precautions)) errors.push("Precautions is required");
-      if (!req(form.medication_changes)) errors.push("Medication Changes is required");
+      if (!req(form.therapy_objective_patient_goals)) errors.push("Patient / Caregiver Goals is required (min 2 characters, 'NA' accepted)");
+      if (!req(form.precautions)) errors.push("Precautions is required (min 2 characters, 'NA' accepted)");
+      if (!req(form.medication_changes)) errors.push("Medication Changes is required (min 2 characters, 'NA' accepted)");
     }
     if (tab === "DC Plan & Edu" && form.visit_type === "evaluation") {
       if (!((form.dc_plan || {}).discharge_setting || "").trim()) errors.push("Anticipated Discharge Setting is required");
-      if (!((form.dc_plan || {}).discharge_criteria || "").trim()) errors.push("Discharge Criteria is required");
+      if (!((form.dc_plan || {}).discharge_criteria || "").trim()) errors.push("Discharge Criteria / Goals for Discharge is required");
       const eduTopics = (form.patient_education || {}).topics || [];
       const hasOtherTopic = (form.patient_education || {}).other_checked && ((form.patient_education || {}).other_topic || "").trim();
       if (eduTopics.length === 0 && !hasOtherTopic) errors.push("At least one Patient Education Topic is required");
       const educatedTo = (form.patient_education || {}).educated_to || [];
-      if (educatedTo.length === 0) errors.push("Educated To is required");
-      if (!((form.patient_education || {}).response || "").trim()) errors.push("Patient / Caregiver Response is required");
+      if (educatedTo.length === 0) errors.push("Educated To is required — select at least one");
+      if (!((form.patient_education || {}).response || "").trim()) errors.push("Patient / Caregiver Response to Education is required");
       if (!((form.dc_plan || {}).treatment_performed || "").trim()) errors.push("Treatment Performed This Visit is required");
       if (!((form.dc_plan || {}).rehab_potential || "").trim()) errors.push("Rehabilitation Potential is required");
     }
@@ -348,7 +361,7 @@ export default function VisitNoteForm({ patients = [], therapists = [], agencies
       const patientSigOk = form.patient_signature || (form.patient_signature_unable && (form.patient_signature_unable_reason || "").trim());
       if (!patientSigOk) {
         if (form.patient_signature_unable) errors.push("Reason for unable to capture patient signature is required");
-        else errors.push("Patient Signature is required");
+        else errors.push("Patient Signature is required (or mark 'Unable to Capture' with a reason)");
       }
     }
     if (tab === "Goals & Plan" && form.visit_type === "evaluation") {
@@ -359,7 +372,7 @@ export default function VisitNoteForm({ patients = [], therapists = [], agencies
       if (!form.plan?.trim()) errors.push("Skilled Service Narrative is required");
       const cc = form.care_coordination || {};
       const hasDisciplines = (cc.disciplines || []).length > 0 || (cc.other || "").trim();
-      if (!hasDisciplines) errors.push("Care Coordination: select at least one discipline");
+      if (!hasDisciplines) errors.push("Care Coordination: select at least one discipline or specify Other");
       if (!(cc.reason || "").trim()) errors.push("Care Coordination Reason is required");
     }
     return errors;
@@ -539,7 +552,7 @@ export default function VisitNoteForm({ patients = [], therapists = [], agencies
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-teal-800">{form.time_in}</p>
                         {form.punch_in_location && (<p className="text-xs text-teal-600 truncate">{form.punch_in_location.lat.toFixed(5)}, {form.punch_in_location.lng.toFixed(5)}</p>)}
-                        {form.punch_in_reason && (<p className="text-xs text-amber-600 mt-0.5">Unable to punch in: {form.punch_in_reason}</p>)}
+                        {form.punch_in_reason && (<p className="text-xs text-amber-600 mt-0.5">⚠ Unable to punch in: {form.punch_in_reason}</p>)}
                       </div>
                       <button type="button" onClick={() => { set("time_in", ""); set("punch_in_location", null); set("punch_in_reason", ""); setUnableToPunchIn(false); setManualTimeIn(""); }} className="text-teal-400 hover:text-red-500">
                         <X className="w-3.5 h-3.5" />
@@ -655,7 +668,7 @@ export default function VisitNoteForm({ patients = [], therapists = [], agencies
                     <Input type="number" min="0" step="0.01" placeholder="Leave blank for standard rate"
                       value={form.special_price ?? ""} onChange={(e) => set("special_price", e.target.value === "" ? null : parseFloat(e.target.value))} className="flex-1" />
                   </div>
-                  {form.special_price != null && (<p className="text-xs text-amber-600 mt-1">Custom rate: ${parseFloat(form.special_price).toFixed(2)} — overrides standard billing</p>)}
+                  {form.special_price != null && (<p className="text-xs text-amber-600 mt-1">⚠ Custom rate: ${parseFloat(form.special_price).toFixed(2)} — overrides standard billing</p>)}
                 </div>
               </div>
 
@@ -818,6 +831,16 @@ export default function VisitNoteForm({ patients = [], therapists = [], agencies
                           </label>
                         );
                       })}
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" checked={!!(form.homebound_other !== undefined && form.homebound_other !== null)} onChange={(e) => set("homebound_other", e.target.checked ? "" : null)} className="w-4 h-4 rounded border-slate-300 text-teal-600 cursor-pointer" />
+                        <span className="text-sm text-slate-700">Other</span>
+                        {(form.homebound_other !== undefined && form.homebound_other !== null) && (
+                          <div className="flex-1 relative">
+                            <input type="text" maxLength={100} value={form.homebound_other || ""} onChange={(e) => set("homebound_other", e.target.value)} className="w-full h-8 rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+                            <span className="absolute right-2 bottom-1 text-[10px] text-slate-400">{(form.homebound_other || "").length}/100</span>
+                          </div>
+                        )}
+                      </label>
                     </div>
                   </div>
                 </div>
@@ -923,6 +946,7 @@ export default function VisitNoteForm({ patients = [], therapists = [], agencies
               <div className="border-t pt-4">
                 <Label className="text-blue-700 font-semibold mb-3 block">Standardized Testing</Label>
                 <StandardizedTestForm tests={form.standardized_tests || []} onChange={(tests) => set("standardized_tests", tests)} />
+                <div className="mt-3"><Label className="text-sm text-slate-600">Additional Notes</Label><DictationTextarea placeholder="Additional testing notes or observations..." value={form.standardized_testing || ""} onChange={(e) => set("standardized_testing", e.target.value)} rows={2} /></div>
               </div>
             </CardContent>
           </Card>
@@ -985,12 +1009,76 @@ export default function VisitNoteForm({ patients = [], therapists = [], agencies
             </CardContent>
           </Card>
 
+          <Card className="border-l-4 border-l-red-400">
+            <CardHeader className="pb-3"><CardTitle className="text-base font-semibold text-slate-800">Risk Factors <span className="text-red-500 text-sm">★</span></CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                {form.therapy_type === "Speech Therapy" ? (
+                  <>
+                    <p className="text-sm font-semibold text-slate-700 mb-3">Risk Factors</p>
+                    <div className="space-y-2">
+                      {[
+                        { key: "altered_consciousness", label: "Altered Consciousness" },
+                        { key: "low_motivation", label: "Low Motivation" },
+                        { key: "progressive_neurological_disorder", label: "Progressive Neurological Disorder", sub: "(Parkinson's, ALS, Dementia, MS, etc)" },
+                        { key: "dysphagia_aspiration_risk", label: "Dysphagia / Aspiration Risk" },
+                        { key: "cognitive_impairment", label: "Cognitive Impairment" },
+                        { key: "aphasia_communication_deficit", label: "Aphasia / Communication Deficit" },
+                        { key: "caregiver_support_limited", label: "Limited Caregiver Support" },
+                        { key: "history_of_aspiration_pneumonia", label: "History of Aspiration Pneumonia" },
+                        { key: "tracheostomy", label: "Tracheostomy" },
+                        { key: "behavioral_challenges", label: "Behavioral Challenges" },
+                        { key: "sensory_deficit_slp", label: "Sensory Deficit (vision and/or Hearing)" },
+                        { key: "decreased_cooperation_slp", label: "Decreased Level of Cooperation" },
+                      ].map(({ key, label, sub }) => {
+                        const checked = (form.risk_factors || {})[key] || false;
+                        return (<label key={key} className="flex items-start gap-2 cursor-pointer"><input type="checkbox" checked={checked} onChange={(e) => set("risk_factors", { ...(form.risk_factors || {}), [key]: e.target.checked })} className="w-4 h-4 mt-0.5 rounded border-slate-300 text-teal-600 cursor-pointer" /><span className="text-sm"><span className={checked ? "text-blue-600 font-medium" : "text-slate-700"}>{label}</span>{sub && <span className="block text-xs text-slate-500 italic">{sub}</span>}</span></label>);
+                      })}
+                      <label className="flex items-start gap-2 cursor-pointer"><input type="checkbox" checked={form.risk_factors_other !== undefined && form.risk_factors_other !== null} onChange={(e) => set("risk_factors_other", e.target.checked ? "" : null)} className="w-4 h-4 mt-0.5 rounded border-slate-300 text-teal-600 cursor-pointer" /><span className="text-sm text-slate-700">Other</span></label>
+                      {form.risk_factors_other !== undefined && form.risk_factors_other !== null && (<div className="ml-6"><div className="relative"><Textarea maxLength={300} value={form.risk_factors_other || ""} onChange={(e) => set("risk_factors_other", e.target.value)} rows={3} /></div><div className="text-right text-xs text-slate-400">of 300</div></div>)}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-semibold text-slate-700 mb-3">Risk Factors Predisposing for Fall</p>
+                    <div className="space-y-2">
+                      {[
+                        { key: "prosthesis_orthotics", label: "Prosthesis/Orthotics" }, { key: "weakness_pain", label: "Weakness/Pain" }, { key: "age_over_65", label: "Age over 65" },
+                        { key: "confusion", label: "Confusion" }, { key: "vertigo_dizziness", label: "Vertigo/Dizziness" }, { key: "incontinence_urgency", label: "Incontinence/Urgency" },
+                        { key: "alcohol_use", label: "Alcohol Use" }, { key: "gait_balance_coordination", label: "Gait/Balance/Coordination" }, { key: "assistive_device_malfunction", label: "Assistive Device Malfunction" },
+                        { key: "history_of_falls", label: "History of Falls", sub: "(Past 3 mon.)" }, { key: "improper_use_assistive_device", label: "Improper use of Assistive device" },
+                        { key: "home_safety_issues", label: "Home Safety issues / Structural Barriers" }, { key: "sensory_deficit", label: "↓ Sensory Deficit", sub: "(vision and/or Hearing)" },
+                        { key: "decreased_cooperation", label: "Decreased Level of Cooperation" }, { key: "impaired_judgment", label: "Impaired Judgment/Poor Safety Awareness" },
+                        { key: "lack_home_modifications", label: "Lack of Home Modifications", sub: "(bath, kitchen, stairs, entries & safety bars etc)" },
+                        { key: "unable_to_ambulate", label: "Unable to Ambulate Independently", sub: "(needs to use ambulatory aid, etc)" },
+                        { key: "postural_hypotension", label: "Postural Hypotension with Dizziness" },
+                      ].map(({ key, label, sub }) => {
+                        const checked = (form.risk_factors || {})[key] || false;
+                        return (<label key={key} className="flex items-start gap-2 cursor-pointer"><input type="checkbox" checked={checked} onChange={(e) => set("risk_factors", { ...(form.risk_factors || {}), [key]: e.target.checked })} className="w-4 h-4 mt-0.5 rounded border-slate-300 text-teal-600 cursor-pointer" /><span className="text-sm"><span className={checked ? "text-blue-600 font-medium" : "text-slate-700"}>{label}</span>{sub && <span className="block text-xs text-slate-500 italic">{sub}</span>}</span></label>);
+                      })}
+                      <label className="flex items-start gap-2 cursor-pointer"><input type="checkbox" checked={form.risk_factors_other !== undefined && form.risk_factors_other !== null} onChange={(e) => set("risk_factors_other", e.target.checked ? "" : null)} className="w-4 h-4 mt-0.5 rounded border-slate-300 text-teal-600 cursor-pointer" /><span className="text-sm text-slate-700">Other</span></label>
+                      {form.risk_factors_other !== undefined && form.risk_factors_other !== null && (<div className="ml-6"><div className="relative"><Textarea maxLength={300} value={form.risk_factors_other || ""} onChange={(e) => set("risk_factors_other", e.target.value)} rows={3} /></div><div className="text-right text-xs text-slate-400">of 300</div></div>)}
+                    </div>
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           <TherapyOrdersSection therapyOrders={form.therapy_orders || {}} certPeriodStart={selectedPatient?.cert_period_start} certPeriodEnd={selectedPatient?.cert_period_end} visitDate={form.visit_date} onChange={(orders) => set("therapy_orders", orders)} />
 
           <Card className="border-l-4 border-l-indigo-500">
             <CardHeader className="pb-3"><CardTitle className="text-base font-semibold text-slate-800">Need for Skilled Services <span className="text-red-500 text-sm">★</span></CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div><Label className="text-blue-700 font-semibold">Skilled Service Narrative <span className="text-red-500">★</span></Label><DictationTextarea maxLength={1024} placeholder="Describe the need for skilled services..." value={form.plan || ""} onChange={(e) => set("plan", e.target.value)} rows={4} /></div>
+              <div>
+                <Label className="text-blue-700 font-semibold mb-2 block">Other Skilled Service Recommendations</Label>
+                <div className="space-y-2">
+                  {["OT", "SLP"].map((rec) => { const checked = (form.skilled_service_recommendations || []).includes(rec); return (<label key={rec} className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={checked} onChange={(e) => { const current = form.skilled_service_recommendations || []; set("skilled_service_recommendations", e.target.checked ? [...current, rec] : current.filter((r) => r !== rec)); }} className="w-4 h-4 rounded border-slate-300 text-teal-600 cursor-pointer" /><span className="text-sm text-slate-700">{rec}</span></label>); })}
+                  <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={form.skilled_service_other !== undefined && form.skilled_service_other !== null} onChange={(e) => set("skilled_service_other", e.target.checked ? "" : null)} className="w-4 h-4 rounded border-slate-300 text-teal-600 cursor-pointer" /><span className="text-sm text-slate-700">Other</span></label>
+                  {form.skilled_service_other !== undefined && form.skilled_service_other !== null && (<div className="ml-6"><div className="relative"><input type="text" maxLength={50} value={form.skilled_service_other || ""} onChange={(e) => set("skilled_service_other", e.target.value)} className="w-full h-8 rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" /></div><div className="text-right text-xs text-slate-400">{(form.skilled_service_other || "").length} of 50</div></div>)}
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -1003,6 +1091,7 @@ export default function VisitNoteForm({ patients = [], therapists = [], agencies
                   return (<label key={item} className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={checked} onChange={(e) => { const current = (form.care_coordination || {}).disciplines || []; set("care_coordination", { ...(form.care_coordination || {}), disciplines: e.target.checked ? [...current, item] : current.filter((d) => d !== item) }); }} className="w-4 h-4 rounded border-slate-300 text-teal-600 cursor-pointer" /><span className="text-sm text-slate-700">{item}</span></label>);
                 })}
               </div>
+              <div className="grid grid-cols-[auto_1fr] gap-3 items-center"><Label className="text-sm text-slate-600 whitespace-nowrap">Other:</Label><Input placeholder="None" value={(form.care_coordination || {}).other || ""} onChange={(e) => set("care_coordination", { ...(form.care_coordination || {}), other: e.target.value })} /></div>
               <div><Label className="text-sm text-slate-600">Reason <span className="text-red-500">★</span></Label><DictationTextarea maxLength={300} placeholder="N/A" value={(form.care_coordination || {}).reason || ""} onChange={(e) => set("care_coordination", { ...(form.care_coordination || {}), reason: e.target.value })} rows={3} /></div>
             </CardContent>
           </Card>
@@ -1104,7 +1193,7 @@ export default function VisitNoteForm({ patients = [], therapists = [], agencies
                               ) : (
                                 <p className="text-xs text-slate-400 italic">No treatment items recorded</p>
                               )}
-                              {tr.notes && <p className="text-xs text-slate-500 mt-1.5 truncate">{tr.notes}</p>}
+                              {tr.notes && <p className="text-xs text-slate-500 mt-1.5 truncate">📝 {tr.notes}</p>}
                             </div>
                           );
                         })}
@@ -1125,47 +1214,138 @@ export default function VisitNoteForm({ patients = [], therapists = [], agencies
 
       {/* GOALS (treatment) */}
       {activeTab === "Goals" && form.visit_type === "treatment" && (
-        <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base font-semibold text-slate-800">Session Documentation</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div><Label>Interventions</Label><div className="flex gap-2 mt-1"><Input placeholder="Enter an intervention…" value={interventionInput} onChange={(e) => setInterventionInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addIntervention())} /><Button type="button" size="icon" variant="outline" onClick={addIntervention}><Plus className="w-4 h-4" /></Button></div><div className="flex flex-wrap gap-2 mt-2">{(form.interventions || []).map((g, i) => (<Badge key={i} variant="secondary" className="gap-1 pr-1">{g}<button onClick={() => set("interventions", form.interventions.filter((_, j) => j !== i))}><X className="w-3 h-3" /></button></Badge>))}</div></div>
-            <div><Label>Patient Response</Label><DictationTextarea placeholder="How did the patient respond?" value={form.patient_response || ""} onChange={(e) => set("patient_response", e.target.value)} rows={3} /></div>
-            <div><Label>Functional Status</Label><Select value={form.functional_status || ""} onValueChange={(v) => set("functional_status", v)}><SelectTrigger><SelectValue placeholder="Select level" /></SelectTrigger><SelectContent>{FUNCTIONAL_LEVELS.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}</SelectContent></Select></div>
-          </CardContent>
-        </Card>
-      )}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* LEFT: Documentation fields */}
+          <Card>
+            <CardHeader className="pb-3"><CardTitle className="text-base font-semibold text-slate-800">Session Documentation</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div><Label>Interventions</Label><div className="flex gap-2 mt-1"><Input placeholder="Enter an intervention…" value={interventionInput} onChange={(e) => setInterventionInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addIntervention())} /><Button type="button" size="icon" variant="outline" onClick={addIntervention}><Plus className="w-4 h-4" /></Button></div><div className="flex flex-wrap gap-2 mt-2">{(form.interventions || []).map((g, i) => (<Badge key={i} variant="secondary" className="gap-1 pr-1">{g}<button onClick={() => set("interventions", form.interventions.filter((_, j) => j !== i))}><X className="w-3 h-3" /></button></Badge>))}</div></div>
+              <div><Label>Patient Response</Label><DictationTextarea placeholder="How did the patient respond?" value={form.patient_response || ""} onChange={(e) => set("patient_response", e.target.value)} rows={3} /></div>
+              <div><Label>Functional Status</Label><Select value={form.functional_status || ""} onValueChange={(v) => set("functional_status", v)}><SelectTrigger><SelectValue placeholder="Select level" /></SelectTrigger><SelectContent>{FUNCTIONAL_LEVELS.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}</SelectContent></Select></div>
+            </CardContent>
+          </Card>
 
-      {/* GOALS (re_evaluation / recertification) */}
-      {activeTab === "Goals" && (form.visit_type === "re_evaluation" || form.visit_type === "recertification") && (
-        <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base font-semibold text-slate-800">Goals</CardTitle></CardHeader>
-          <CardContent className="space-y-6">
-            {(form.reeval_goals || []).length === 0 && (<p className="text-sm text-slate-400 italic">No goals yet. Click Add Goal below.</p>)}
-            {(form.reeval_goals || []).map((goalEntry, idx) => {
-              const updateEntry = (field, value) => { const updated = [...(form.reeval_goals || [])]; updated[idx] = { ...updated[idx], [field]: value }; set('reeval_goals', updated); };
-              return (
-                <div key={idx} className="border-b pb-6 last:border-b-0 last:pb-0 space-y-3">
-                  <div className="flex items-center justify-between"><p className="text-sm font-semibold text-amber-700">Goal: {idx + 1}</p><button type="button" onClick={() => set('reeval_goals', (form.reeval_goals || []).filter((_, i) => i !== idx))} className="text-slate-400 hover:text-red-500"><X className="w-4 h-4" /></button></div>
-                  <Textarea value={goalEntry.goal || ''} onChange={(e) => updateEntry('goal', e.target.value)} rows={3} className="text-sm" />
-                  <div><Label className="text-sm text-slate-600">Prior Assessment Status:</Label><Textarea value={goalEntry.prior_assessment_status || ''} onChange={(e) => updateEntry('prior_assessment_status', e.target.value)} rows={2} maxLength={300} className="text-sm mt-1" /></div>
-                  <div><Label className="text-sm text-slate-600">Reassessment Status:</Label><Textarea value={goalEntry.reassessment_status || ''} onChange={(e) => updateEntry('reassessment_status', e.target.value)} rows={2} maxLength={300} className="text-sm mt-1" /></div>
-                  <div>
-                    <Label className="text-sm text-slate-600">Goal Status:</Label>
-                    <div className="flex gap-6 mt-2">{['continue', 'modify', 'goal_met'].map((status) => (<label key={status} className="flex items-center gap-2 cursor-pointer"><input type="radio" name={`goal_status_${idx}`} checked={goalEntry.goal_status === status} onChange={() => updateEntry('goal_status', status)} className="w-4 h-4 text-teal-600 cursor-pointer" /><span className="text-sm text-slate-700 capitalize">{status === 'goal_met' ? 'Goal Met' : status.charAt(0).toUpperCase() + status.slice(1)}</span></label>))}</div>
+          {/* RIGHT: Eval goals to select from */}
+          <Card className="border-l-4 border-l-blue-400">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold text-slate-800">Goals from Evaluation</CardTitle>
+              <p className="text-xs text-slate-500 mt-1">Select the goals addressed this session</p>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const evalNote = patientVisits.find(v =>
+                  v.visit_type === 'evaluation' &&
+                  v.therapy_type === form.therapy_type &&
+                  (v.status === 'completed' || v.status === 'signed') &&
+                  v.eval_treatment_goals?.length > 0
+                );
+                const evalGoals = evalNote?.eval_treatment_goals?.filter(g => (g.goal || '').trim()) || [];
+                if (evalGoals.length === 0) {
+                  return <p className="text-sm text-slate-400 italic">No evaluation goals found for this therapy type.</p>;
+                }
+                const selectedGoals = form.goals_addressed || [];
+                return (
+                  <div className="space-y-2">
+                    {evalGoals.map((g, i) => {
+                      const isSelected = selectedGoals.includes(g.goal);
+                      return (
+                        <label key={i} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'bg-blue-50 border-blue-300' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              const cur = form.goals_addressed || [];
+                              set("goals_addressed", e.target.checked ? [...cur, g.goal] : cur.filter(x => x !== g.goal));
+                            }}
+                            className="w-4 h-4 mt-0.5 rounded border-slate-300 text-teal-600 cursor-pointer shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <p className={`text-sm leading-snug ${isSelected ? 'text-blue-800 font-medium' : 'text-slate-700'}`}>{g.goal}</p>
+                            {g.is_long_term && <span className="text-[10px] text-purple-500 font-medium uppercase tracking-wide">Long Term</span>}
+                          </div>
+                        </label>
+                      );
+                    })}
                   </div>
-                  {goalEntry.goal_status === 'modify' && (<div className="border border-amber-200 bg-amber-50 rounded-lg p-3 space-y-2"><Label className="text-sm font-semibold text-amber-800">Modified Goal:</Label><Textarea placeholder="Enter the modified goal text..." value={goalEntry.modified_goal || ''} onChange={(e) => updateEntry('modified_goal', e.target.value)} rows={3} className="text-sm bg-white" /></div>)}
-                </div>
-              );
-            })}
-            <Button type="button" variant="outline" className="w-full gap-2 border-dashed mt-2" onClick={() => set('reeval_goals', [...(form.reeval_goals || []), { goal: '', prior_assessment_status: '', reassessment_status: '', goal_status: 'continue', modified_goal: '', modified_date: '' }])}>
-              <Plus className="w-4 h-4" /> Add Goal
-            </Button>
-          </CardContent>
-        </Card>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </div>
       )}
 
-      {/* PLAN (re_evaluation / recertification) */}
-      {activeTab === "Plan" && (form.visit_type === "re_evaluation" || form.visit_type === "recertification") && (
+      {/* GOALS (recertification) */}
+      {activeTab === "Goals" && form.visit_type === "recertification" && (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="pb-3"><CardTitle className="text-base font-semibold text-slate-800">Goals</CardTitle></CardHeader>
+            <CardContent className="space-y-6">
+              {(form.reeval_goals || []).length === 0 && (<p className="text-sm text-slate-400 italic">No goals yet. Click &quot;Add Goal&quot; below or check that the initial evaluation has completed goals.</p>)}
+              {(form.reeval_goals || []).map((goalEntry, idx) => {
+                const updateEntry = (field, value) => { const updated = [...(form.reeval_goals || [])]; updated[idx] = { ...updated[idx], [field]: value }; set('reeval_goals', updated); };
+                return (
+                  <div key={idx} className="border-b pb-6 last:border-b-0 last:pb-0 space-y-3">
+                    <div className="flex items-center justify-between"><p className="text-sm font-semibold text-amber-700">Goal: {idx + 1}</p><button type="button" onClick={() => set('reeval_goals', (form.reeval_goals || []).filter((_, i) => i !== idx))} className="text-slate-400 hover:text-red-500"><X className="w-4 h-4" /></button></div>
+                    <Textarea value={goalEntry.goal || ''} onChange={(e) => updateEntry('goal', e.target.value)} rows={3} className="text-sm" />
+                    <div><Label className="text-sm text-slate-600">Prior Assessment Status:</Label><Textarea value={goalEntry.prior_assessment_status || ''} onChange={(e) => updateEntry('prior_assessment_status', e.target.value)} rows={2} maxLength={300} className="text-sm mt-1" /></div>
+                    <div><Label className="text-sm text-slate-600">Reassessment Status:</Label><Textarea value={goalEntry.reassessment_status || ''} onChange={(e) => updateEntry('reassessment_status', e.target.value)} rows={2} maxLength={300} className="text-sm mt-1" /></div>
+                    <div>
+                      <Label className="text-sm text-slate-600">Goal Status:</Label>
+                      <div className="flex gap-6 mt-2">{['continue', 'modify', 'goal_met'].map((status) => (<label key={status} className="flex items-center gap-2 cursor-pointer"><input type="radio" name={`recert_goal_status_${idx}`} checked={goalEntry.goal_status === status} onChange={() => updateEntry('goal_status', status)} className="w-4 h-4 text-teal-600 cursor-pointer" /><span className="text-sm text-slate-700 capitalize">{status === 'goal_met' ? 'Goal Met' : status.charAt(0).toUpperCase() + status.slice(1)}</span></label>))}</div>
+                    </div>
+                    {goalEntry.goal_status === 'modify' && (<div className="border border-amber-200 bg-amber-50 rounded-lg p-3 space-y-2"><Label className="text-sm font-semibold text-amber-800">Modified Goal:</Label><Textarea placeholder="Enter the modified goal text..." value={goalEntry.modified_goal || ''} onChange={(e) => updateEntry('modified_goal', e.target.value)} rows={3} className="text-sm bg-white" /></div>)}
+                  </div>
+                );
+              })}
+              <Button type="button" variant="outline" className="w-full gap-2 border-dashed mt-2" onClick={() => set('reeval_goals', [...(form.reeval_goals || []), { goal: '', prior_assessment_status: '', reassessment_status: '', goal_status: 'continue', modified_goal: '', modified_date: '' }])}>
+                <Plus className="w-4 h-4" /> Add Goal
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* PLAN (recertification) */}
+      {activeTab === "Plan" && form.visit_type === "recertification" && (
+        <>
+          <ReevalPlanTab form={form} set={set} selectedPatient={selectedPatient} />
+          {form.include_roc_oasis && (<DischargeOasisSection oasis={form.roc_oasis || {}} onChange={(v) => set("roc_oasis", v)} />)}
+        </>
+      )}
+
+      {/* GOALS (re_evaluation) */}
+      {activeTab === "Goals" && form.visit_type === "re_evaluation" && (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="pb-3"><CardTitle className="text-base font-semibold text-slate-800">Goals</CardTitle></CardHeader>
+            <CardContent className="space-y-6">
+              {(form.reeval_goals || []).length === 0 && (<p className="text-sm text-slate-400 italic">No goals yet. Click &quot;Add Goal&quot; below or check that the initial evaluation has completed goals.</p>)}
+              {(form.reeval_goals || []).map((goalEntry, idx) => {
+                const updateEntry = (field, value) => { const updated = [...(form.reeval_goals || [])]; updated[idx] = { ...updated[idx], [field]: value }; set('reeval_goals', updated); };
+                return (
+                  <div key={idx} className="border-b pb-6 last:border-b-0 last:pb-0 space-y-3">
+                    <div className="flex items-center justify-between"><p className="text-sm font-semibold text-amber-700">Goal: {idx + 1}</p><button type="button" onClick={() => set('reeval_goals', (form.reeval_goals || []).filter((_, i) => i !== idx))} className="text-slate-400 hover:text-red-500"><X className="w-4 h-4" /></button></div>
+                    <Textarea value={goalEntry.goal || ''} onChange={(e) => updateEntry('goal', e.target.value)} rows={3} className="text-sm" />
+                    <div><Label className="text-sm text-slate-600">Prior Assessment Status:</Label><Textarea value={goalEntry.prior_assessment_status || ''} onChange={(e) => updateEntry('prior_assessment_status', e.target.value)} rows={2} maxLength={300} className="text-sm mt-1" /></div>
+                    <div><Label className="text-sm text-slate-600">Reassessment Status:</Label><Textarea value={goalEntry.reassessment_status || ''} onChange={(e) => updateEntry('reassessment_status', e.target.value)} rows={2} maxLength={300} className="text-sm mt-1" /><div className="text-right text-xs text-slate-400 mt-0.5">{(goalEntry.reassessment_status || '').length} of 300</div></div>
+                    <div>
+                      <Label className="text-sm text-slate-600">Goal Status:</Label>
+                      <div className="flex gap-6 mt-2">{['continue', 'modify', 'goal_met'].map((status) => (<label key={status} className="flex items-center gap-2 cursor-pointer"><input type="radio" name={`goal_status_${idx}`} checked={goalEntry.goal_status === status} onChange={() => { const today = new Date().toISOString().split('T')[0]; updateEntry('goal_status', status); if (status === 'modify' && !goalEntry.modified_date) updateEntry('modified_date', today); }} className="w-4 h-4 text-teal-600 cursor-pointer" /><span className="text-sm text-slate-700 capitalize">{status === 'goal_met' ? 'Goal Met' : status.charAt(0).toUpperCase() + status.slice(1)}</span></label>))}</div>
+                    </div>
+                    {goalEntry.goal_status === 'modify' && (<div className="border border-amber-200 bg-amber-50 rounded-lg p-3 space-y-2"><div className="flex items-center justify-between"><Label className="text-sm font-semibold text-amber-800">Modified Goal:</Label>{goalEntry.modified_date && (<span className="text-xs text-amber-600 font-medium">Modified: {goalEntry.modified_date}</span>)}</div><Textarea placeholder="Enter the modified goal text..." value={goalEntry.modified_goal || ''} onChange={(e) => updateEntry('modified_goal', e.target.value)} rows={3} className="text-sm bg-white" /></div>)}
+                  </div>
+                );
+              })}
+              <Button type="button" variant="outline" className="w-full gap-2 border-dashed mt-2" onClick={() => set('reeval_goals', [...(form.reeval_goals || []), { goal: '', prior_assessment_status: '', reassessment_status: '', goal_status: 'continue', modified_goal: '', modified_date: '' }])}>
+                <Plus className="w-4 h-4" /> Add Goal
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* PLAN (re_evaluation) */}
+      {activeTab === "Plan" && form.visit_type === "re_evaluation" && (
         <ReevalPlanTab form={form} set={set} selectedPatient={selectedPatient} />
       )}
 
@@ -1173,7 +1353,7 @@ export default function VisitNoteForm({ patients = [], therapists = [], agencies
       {activeTab === "Discharge" && (form.visit_type === "discharge_with_visit" || form.visit_type === "discharge_without_visit") && (
         <div className="space-y-6">
           <Card className="border-l-4 border-l-green-500">
-            <CardHeader className="pb-3"><CardTitle className="text-base font-semibold text-slate-800">Discharge Summary</CardTitle></CardHeader>
+            <CardHeader className="pb-3"><CardTitle className="text-base font-semibold text-slate-800">Discharge Summary</CardTitle><p className="text-xs text-slate-500 mt-1">Document final status and outcomes</p></CardHeader>
             <CardContent className="space-y-4">
               <div><Label className="text-green-700 font-semibold">Treatment Summary</Label><DictationTextarea placeholder="Total visits, duration..." value={form.subjective || ""} onChange={(e) => set("subjective", e.target.value)} rows={3} /></div>
               <div><Label className="text-green-700 font-semibold">Outcomes & Goal Achievement</Label><DictationTextarea placeholder="Final measurements..." value={form.objective || ""} onChange={(e) => set("objective", e.target.value)} rows={4} /></div>

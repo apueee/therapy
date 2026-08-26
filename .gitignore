@@ -43,3 +43,7 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# database exports (may contain real patient/visit data)
+/db-export/
+db-export.zip
