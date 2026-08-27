@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { updateTaskStatus, deleteTask } from "@/app/(app)/TaskAssignment/actions";
-import { apiSuccess, apiError, handleApiError } from "@/lib/api/response";
+import { updateTask, deleteTask } from "@/app/(app)/TaskAssignment/actions";
+import { apiSuccess, handleApiError } from "@/lib/api/response";
 
 export async function PATCH(
   request: NextRequest,
@@ -8,9 +8,8 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const { status } = await request.json();
-    if (!status) return apiError("status is required", 400);
-    const result = await updateTaskStatus(id, status);
+    const data = await request.json();
+    const result = await updateTask(id, data);
     return apiSuccess(result);
   } catch (err) {
     return handleApiError(err);
