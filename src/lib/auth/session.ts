@@ -10,8 +10,14 @@ export async function getSession() {
 }
 
 async function getBearerUser(): Promise<SessionUser | null> {
-  const headerList = await headers();
-  const authHeader = headerList.get("authorization");
+  let authHeader: string | null;
+  try {
+    authHeader = (await headers()).get("authorization");
+  } catch {
+    // headers() throws when called outside a request scope (e.g. in unit tests
+    // that mock auth() directly without a Next.js request context).
+    return null;
+  }
   if (!authHeader?.startsWith("Bearer ")) return null;
 
   const token = authHeader.slice("Bearer ".length).trim();
