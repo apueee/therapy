@@ -4,7 +4,9 @@
 
 TherapyVisit Pro is a therapy-visit documentation and billing system for contract PT/OT/SLP therapy agencies: referral intake, therapist assignment, visit note documentation (evaluation/treatment/re-eval/recert/discharge), scheduling, invoicing, payroll, and compliance (audit logs, two-admin approval for record deletion).
 
-This is a **Next.js migration of an original Base44 app** (a low-code platform product). The migration's hard requirement was pixel-perfect UI/UX parity with the original — same layout, colors, fonts, field names, and user flows — while replacing Base44's hosted backend with a real one. A REST API was added afterward for external/programmatic access (e.g. a future mobile app), on top of the same backend.
+This is a **Next.js migration of an original Base44 app** (a low-code platform product). The migration's hard requirement was pixel-perfect UI/UX parity with the original — same layout, colors, fonts, field names, and user flows — while replacing Base44's hosted backend with a real one.
+
+A REST API was added afterward for external/programmatic access, and then the web UI itself was migrated onto that same REST API (see "REST-only frontend" below) — in preparation for a future rewrite of the backend in a different language/runtime (e.g. Go) without also having to rewrite the frontend.
 
 ## Stack
 
@@ -14,19 +16,23 @@ This is a **Next.js migration of an original Base44 app** (a low-code platform p
 - **Vitest** for unit tests (101 tests: RBAC, validation schemas, auth helpers, audit logger)
 - **Tailwind + shadcn/ui** components (ported 1:1 from the Base44 original)
 
-## Two ways in, one backend
+## REST-only frontend, one backend
 
 ```
 ┌─────────────────┐     ┌──────────────────┐
 │   Web UI (React) │     │  External client  │
 │  (session cookie)│     │ (Bearer API key)  │
 └────────┬─────────┘     └─────────┬─────────┘
-         │                          │
+         │  fetch()                 │  fetch()
+         │  via src/lib/api-client  │
          ▼                          ▼
-  Server Actions              REST routes
-  (src/app/**/actions.js)    (src/app/api/v1/**)
-         │                          │
-         └───────────┬──────────────┘
+              REST routes
+           (src/app/api/v1/**)
+                      │
+                      ▼
+        actions.js functions (unchanged)
+     (src/app/**/actions.js, src/components/**/*-actions.js)
+                      │
                       ▼
          requireAuth() / requireRole()
          (src/lib/auth/session.ts)
@@ -35,9 +41,19 @@ This is a **Next.js migration of an original Base44 app** (a low-code platform p
               Prisma → PostgreSQL
 ```
 
-The web app and the REST API are **not separate implementations** — REST routes are thin wrappers that import and call the exact same server-action functions the UI calls. This was a deliberate design choice: it means the REST API can never drift from the UI's business logic, and adding a new REST endpoint is a small, low-risk change (see `docs/API.md`'s "Implementation pattern" section).
+The web app and external API consumers now go through the **exact same REST routes** — the browser is just another REST client. Every page component calls a thin wrapper in `src/lib/api-client/<domain>.ts` (one file per backend domain, mirroring the `actions.js` files) instead of importing a server action directly. Each wrapper exports functions with the same names/signatures the old direct-import call sites used, so migrating a call site was a one-line import swap, not a rewrite.
 
-What makes both paths work through the same `requireAuth()` call: it checks for a NextAuth session cookie first, and if there isn't one, falls back to checking for an `Authorization: Bearer` header and looking up an `ApiKey` record in the database. Either way it returns the same `SessionUser` shape, so nothing downstream needs to know or care which auth method was used.
+This was **not** the original design — the web UI used to call server actions directly (in-process function calls, no HTTP hop), with REST existing only for external callers. It was migrated to be REST-only so that the backend (route.ts + actions.js + Prisma) can eventually be swapped for a different implementation (e.g. a Go service) by changing where the frontend's fetch calls point, without touching any page/component code. See "REST API base URL" below.
+
+The `actions.js` files themselves were **never touched** by this migration — they still contain 100% of the business logic (Prisma queries, validation, audit logging), and REST routes are still thin wrappers around them, same as before. Only their *callers* changed: previously both page components and route.ts handlers imported them; now only route.ts handlers do.
+
+What makes both session-cookie and bearer-token callers work through the same `requireAuth()` call: it checks for a NextAuth session cookie first, and if there isn't one, falls back to checking for an `Authorization: Bearer` header and looking up an `ApiKey` record in the database. Either way it returns the same `SessionUser` shape, so nothing downstream needs to know or care which auth method was used. The web UI relies on the cookie path (same-origin `fetch()` sends it automatically); the bearer-token path is for external/programmatic callers.
+
+## REST API base URL
+
+`src/lib/api-client/_fetch.ts` exports `apiUrl(path)`, which every api-client file uses instead of a bare `fetch("/api/v1/...")`. It prefixes `process.env.NEXT_PUBLIC_API_URL` (empty by default, so `apiUrl(path)` returns `path` unchanged and requests stay relative/same-origin — zero behavior change today). If the API is ever split into a separately-deployed service, pointing the whole frontend at it is a one-line env var change instead of touching the ~70 call sites across 18 files. See `.env.example`.
+
+Note this only solves the URL half of a real split — cookie-based session auth doesn't survive a cross-origin split on its own (would need `SameSite=None` + a same-origin proxy, or the web UI switching to bearer tokens too). Not needed while frontend and API share an origin.
 
 ## Auth & authorization
 
@@ -70,17 +86,21 @@ Next.js 16 deprecated `middleware.ts` in favor of `proxy.ts`. This isn't just a 
 ```
 src/
   app/
-    (auth)/login/            — public login page + its own server action
-    (app)/<Domain>/          — one folder per page/domain, each with page.jsx + actions.js
+    (auth)/login/            — public login page; calls POST /api/v1/auth/login via fetch
+    (app)/<Domain>/          — one folder per page/domain: page.jsx (calls api-client) + actions.js
+                                (business logic, called only by route.ts now — see below)
     api/
       auth/[...nextauth]/    — NextAuth handler
       upload/                — file upload endpoint
-      v1/<domain>/           — REST API (see docs/API.md)
-  components/                — shared UI, some domains keep actions.js alongside components
+      v1/<domain>/           — REST API (see docs/API.md) — imports and calls actions.js functions
+  components/                — shared UI; some domains keep actions.js alongside components
                                 instead of under app/ (communication-actions.js, referral-actions.js,
                                 dashboard-actions.js) when the feature is patient/dashboard-scoped
-                                rather than its own page
+                                rather than its own page — same "only called by route.ts" rule applies
   lib/
+    api-client/              — one *.ts file per backend domain; thin fetch() wrappers the frontend
+                                calls instead of importing actions.js directly (_fetch.ts holds the
+                                shared apiUrl()/handleResponse() helpers)
     auth/                    — session.ts (requireAuth/requireRole), config.ts (NextAuth), api-keys.ts
     api/                     — response.ts (shared REST response helpers)
     db/                      — Prisma client singleton
@@ -99,9 +119,16 @@ The backend was built incrementally across a linear chain of 22 branches (`task-
 
 The REST API and the `proxy.ts` fix were added the same way: implemented at the branch where each domain's actions first appear (or at `task-1`/`task-2` for the shared auth foundation), then merged forward through the rest of the chain and force-pushed, so every branch's history stays consistent and each branch remains independently buildable.
 
+The **REST-only frontend migration** (converting every page/component from direct `actions.js` imports to `src/lib/api-client/*.ts`) was applied to **`task-22-form-components` only** — it's a new architectural direction layered on top of the already-built REST API, not "how each domain was originally built," so it wasn't propagated through the other 21 historical branches.
+
 ## Known gaps
 
 - PDF generation/import (invoice PDF, Excel export, visit note PDF, referral PDF import) — needs `jspdf`/`xlsx`/`pdf-parse`, not yet added
 - Session timeout warning / auto-logout / user impersonation — UI-only features, not yet implemented
 - No API-key management UI yet (keys are issued via `src/lib/auth/api-keys.ts` directly — see `docs/API.md`)
-- No rate limiting or CORS configuration on `/api/v1/*` (not needed yet — no external browser-based caller exists)
+- No rate limiting or CORS configuration on `/api/v1/*` (not needed yet — frontend and API share an origin, no external browser-based caller exists)
+- `src/app/(auth)/login/actions.js` (the pre-migration `loginAction` server action) is now dead code, left in place unreferenced rather than deleted
+
+## Fresh clone: Prisma client generation
+
+`prisma/schema.prisma` generates the client to a custom path (`src/generated/prisma/`, gitignored like any build artifact) instead of the default `node_modules/@prisma/client`. `package.json` has a `postinstall: "prisma generate"` hook so this happens automatically on `npm install`. If you ever see `Module not found: Can't resolve '@/generated/prisma/client'`, run `npx prisma generate` manually — it usually means `node_modules` was restored/copied without a full `npm install` running.

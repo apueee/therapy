@@ -1,6 +1,8 @@
 # REST API Reference
 
-TherapyVisit Pro exposes a REST API under `/api/v1` alongside the Next.js Server Actions that power the web UI. Both hit the exact same underlying business logic — the REST layer is a thin wrapper around the existing server actions, not a separate implementation. This means REST and the web app always stay in sync automatically.
+TherapyVisit Pro exposes a REST API under `/api/v1`. This is not just an external-facing API — **the web app itself consumes it too**, via thin fetch wrappers in `src/lib/api-client/*.ts` (one file per domain). The web UI used to call server actions directly (in-process, no HTTP hop); it was migrated onto this same REST API so a future backend rewrite (e.g. a Go service) only requires repointing where the frontend's requests go, not rewriting any page/component. See `docs/ARCHITECTURE.md`.
+
+Every endpoint is a thin wrapper around an existing `actions.js` function — the REST layer never duplicates business logic, it just translates HTTP in/out.
 
 ## Authentication
 
@@ -61,14 +63,23 @@ A handful of endpoints represent "my own" data (my tasks, my time logs, my notif
 
 `{id}` denotes a path parameter (substitute the actual resource ID) — this is standard REST/OpenAPI notation, not literal Next.js folder syntax.
 
+### Auth
+
+| Method | Path | Notes |
+|---|---|---|
+| POST | `/api/v1/auth/login` | Body: `{ email, password }`. Sets the session cookie on success — this is how the web UI itself logs in. Not wrapped from an action; reimplements `signIn("credentials", ...)` directly. |
+
 ### Users
-*(requires SUPERUSER or ADMIN)*
+*(requires SUPERUSER or ADMIN, unless noted)*
 
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/api/v1/users` | List all users |
 | POST | `/api/v1/users` | Body: `{ email, userType }`. Invites a user (default password `changeme123`) |
 | PATCH | `/api/v1/users/{id}` | Body: `{ data: {...} }` |
+| POST | `/api/v1/users/sync-therapists` | Creates/links user accounts for active therapists missing one |
+| GET | `/api/v1/users/for-select` | Lightweight `{id, email, full_name}` list for assignment dropdowns — any authenticated user, not role-restricted |
+| POST | `/api/v1/users/verify-password` | Body: `{ password }`. Verifies the *caller's own* current password — powers the HR password gate in front of therapist disciplinary records |
 
 ### Patients
 
@@ -82,6 +93,7 @@ A handful of endpoints represent "my own" data (my tasks, my time logs, my notif
 | GET | `/api/v1/patients/{id}/visits` | Visit history for this patient |
 | GET | `/api/v1/patients/{id}/communication-notes` | Communication notes for this patient |
 | POST | `/api/v1/patients/{id}/communication-notes` | Body: `{ patientName, note, noteType }` |
+| GET | `/api/v1/patients/agencies-for-select` | Lightweight `{id, name}` list for agency dropdowns — any authenticated user, not role-restricted |
 
 ### Therapists
 *(list/detail require SUPERUSER, ADMIN, COORDINATOR, or HR)*
@@ -93,6 +105,7 @@ A handful of endpoints represent "my own" data (my tasks, my time logs, my notif
 | GET | `/api/v1/therapists/{id}` | Detail |
 | PATCH | `/api/v1/therapists/{id}` | Update (SUPERUSER/ADMIN/HR) |
 | DELETE | `/api/v1/therapists/{id}` | SUPERUSER/ADMIN only |
+| GET | `/api/v1/therapists/schedule` | Lightweight list for schedule/calendar UI — any authenticated user, not role-restricted (unlike the endpoints above) |
 
 ### Agencies
 *(SUPERUSER/ADMIN/COORDINATOR for read, SUPERUSER/ADMIN for write)*
@@ -112,6 +125,7 @@ A handful of endpoints represent "my own" data (my tasks, my time logs, my notif
 |---|---|
 | GET | `/api/v1/company-info` |
 | PATCH | `/api/v1/company-info` |
+| PATCH | `/api/v1/company-info/menu-permissions` |
 
 ### Audit Logs
 *(SUPERUSER/ADMIN)*
@@ -168,16 +182,20 @@ A handful of endpoints represent "my own" data (my tasks, my time logs, my notif
 | GET | `/api/v1/visit-notes/{id}` | Full detail |
 | PATCH | `/api/v1/visit-notes/{id}` | Create-or-update semantics (same underlying `saveVisitNote`) |
 | DELETE | `/api/v1/visit-notes/{id}` | SUPERUSER/ADMIN only |
+| PATCH | `/api/v1/visit-notes/{id}/field` | Body: `{ field, value }`. Single-field update (e.g. quick status change), distinct from the full PATCH above |
+| GET | `/api/v1/visit-notes/form-data` | Bundled active patients/therapists/agencies for the visit note form |
 
 ### Invoices
 *(SUPERUSER/ADMIN for writes)*
 
-| Method | Path |
-|---|---|
-| GET | `/api/v1/invoices` |
-| POST | `/api/v1/invoices` |
-| PATCH | `/api/v1/invoices/{id}` |
-| DELETE | `/api/v1/invoices/{id}` |
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/v1/invoices` | |
+| POST | `/api/v1/invoices` | |
+| PATCH | `/api/v1/invoices/{id}` | |
+| DELETE | `/api/v1/invoices/{id}` | |
+| GET | `/api/v1/invoices/agencies` | Rates-included agency list for the invoice creation form — distinct from `GET /api/v1/agencies` |
+| GET | `/api/v1/invoices/completed-visits` | Completed/signed visits available for billing |
 
 ### Payroll, Reports, Calendar
 *(read-only, SUPERUSER/ADMIN)*
@@ -208,13 +226,11 @@ A handful of endpoints represent "my own" data (my tasks, my time logs, my notif
 
 ---
 
-## Deliberately excluded from REST
+## Coverage
 
-A few server-action functions have no REST endpoint, on purpose:
+Every `actions.js` function used anywhere in the app has a REST endpoint — there is no function the web UI calls that skips REST. The one exception is `loginAction` (`src/app/(auth)/login/actions.js`), which is dead code: `POST /api/v1/auth/login` reimplements the same `signIn()` call directly rather than wrapping the old server action, since a Server Action bound to a `<form action>` doesn't translate to an HTTP handler.
 
-- `syncTherapistsToUsers`, `verifyCurrentUserPassword` (UserManagement) — internal/no REST semantics
-- `saveMenuPermissions` (CompanyInformation) — admin config UI concern
-- `getAgenciesForSelect`, `getUsersForSelect`, `getTherapistsForSchedule`, `getAgenciesForInvoice`, `getCompletedVisitsForInvoice`, `getVisitFormData` — UI dropdown/lookup helpers, redundant with the corresponding resource's own list endpoint (e.g. use `GET /api/v1/agencies` instead of `getAgenciesForSelect`)
+A few endpoints are intentionally **not role-restricted** even though the equivalent "main" resource endpoint is — these exist because a broader set of users (e.g. any authenticated therapist) needs the data for a dropdown or schedule view, while only admins/coordinators can see the full resource. Look for "not role-restricted" in the Notes column above (`/users/for-select`, `/patients/agencies-for-select`, `/therapists/schedule`) — don't assume these can be merged into the general list endpoint, since doing so would either break access for the broader audience or over-expose data to it.
 
 ## Implementation pattern
 
