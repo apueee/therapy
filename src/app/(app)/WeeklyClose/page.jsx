@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { getWeeklyCloseData } from "@/app/(app)/VisitCalendar/actions";
+import { getWeeklyCloseData } from "@/lib/api-client/calendar";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

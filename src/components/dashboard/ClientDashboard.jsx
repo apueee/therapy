@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { getPatients } from "@/app/(app)/Patients/actions";
-import { getCalendarVisits } from "@/app/(app)/VisitCalendar/actions";
+import { getCalendarVisits } from "@/lib/api-client/calendar";
 
 const therapyColors = {
   "Physical Therapy": "bg-blue-100 text-blue-800 border-blue-200",

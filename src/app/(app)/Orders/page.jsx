@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { getCalendarVisits } from "@/app/(app)/VisitCalendar/actions";
+import { getCalendarVisits } from "@/lib/api-client/calendar";
 import { getDeletionRequests } from "./actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";

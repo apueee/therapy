@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { getCalendarVisits } from "./actions";
+import { getCalendarVisits } from "@/lib/api-client/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Filter, X as XIcon, Download, Calendar, CalendarDays, ChevronLeft, ChevronRight, X } from "lucide-react";
 import {

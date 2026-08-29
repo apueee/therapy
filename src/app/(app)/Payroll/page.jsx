@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useCurrentUser } from "@/components/layout/UserContext";
-import { getPayrollData } from "./actions";
+import { getPayrollData } from "@/lib/api-client/payroll";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

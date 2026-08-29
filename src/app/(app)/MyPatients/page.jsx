@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useCurrentUser } from "@/components/layout/UserContext";
 import { getPatients } from "@/app/(app)/Patients/actions";
-import { getCalendarVisits, getTherapistsForSchedule } from "@/app/(app)/VisitCalendar/actions";
+import { getCalendarVisits, getTherapistsForSchedule } from "@/lib/api-client/calendar";
 import { getAssignments } from "@/components/patients/referral-actions";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";

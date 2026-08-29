@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, subMonths } from "date-fns";
 import { AlertCircle } from "lucide-react";
-import { getCalendarVisits } from "@/app/(app)/VisitCalendar/actions";
+import { getCalendarVisits } from "@/lib/api-client/calendar";
 
 export default function MissedVisitReport() {
   const [dateFrom, setDateFrom] = useState(format(subMonths(new Date(), 1), "yyyy-MM-01"));

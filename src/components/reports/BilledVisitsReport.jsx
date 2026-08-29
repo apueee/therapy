@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { format, subMonths } from "date-fns";
 import { FileText, Building2 } from "lucide-react";
-import { getCalendarVisits } from "@/app/(app)/VisitCalendar/actions";
+import { getCalendarVisits } from "@/lib/api-client/calendar";
 
 export default function BilledVisitsReport() {
   const [dateFrom, setDateFrom] = useState(format(subMonths(new Date(), 1), "yyyy-MM-01"));

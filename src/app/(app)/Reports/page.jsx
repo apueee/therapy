@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useCurrentUser } from "@/components/layout/UserContext";
-import { getReportsData } from "./actions";
+import { getReportsData } from "@/lib/api-client/reports";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

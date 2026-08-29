@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useCurrentUser } from "@/components/layout/UserContext";
-import { getCalendarVisits, getTherapistsForSchedule } from "@/app/(app)/VisitCalendar/actions";
+import { getCalendarVisits, getTherapistsForSchedule } from "@/lib/api-client/calendar";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

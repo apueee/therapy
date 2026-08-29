@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useCurrentUser } from "@/components/layout/UserContext";
 import { getPatients, createPatient, updatePatient } from "./actions";
-import { getCalendarVisits } from "@/app/(app)/VisitCalendar/actions";
+import { getCalendarVisits } from "@/lib/api-client/calendar";
 import { createReferral, getAssignments } from "@/components/patients/referral-actions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
