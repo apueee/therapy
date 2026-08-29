@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { getUsers, inviteUser, updateUser, syncTherapistsToUsers } from "./actions";
+import { getUsers, inviteUser, updateUser, syncTherapistsToUsers } from "@/lib/api-client/users";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";

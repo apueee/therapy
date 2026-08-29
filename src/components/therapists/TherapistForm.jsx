@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UserPlus, CheckCircle, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { inviteUser } from "@/app/(app)/UserManagement/actions";
+import { inviteUser } from "@/lib/api-client/users";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import TherapistFilesSection from "./TherapistFilesSection";

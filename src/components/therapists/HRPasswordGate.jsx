@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Lock, Eye, EyeOff, ShieldCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { verifyCurrentUserPassword } from "@/app/(app)/UserManagement/actions";
+import { verifyCurrentUserPassword } from "@/lib/api-client/users";
 
 /**
  * Wraps sensitive HR content behind a password confirmation gate.

@@ -13,7 +13,7 @@ import { getPatients } from "@/app/(app)/Patients/actions";
 import { getTherapists } from "@/lib/api-client/therapists";
 import { getCalendarVisits } from "@/lib/api-client/calendar";
 import { getAgencies } from "@/lib/api-client/agencies";
-import { getUsers } from "@/app/(app)/UserManagement/actions";
+import { getUsers } from "@/lib/api-client/users";
 
 export default function SuperuserDashboard() {
   const [patients, setPatients] = useState([]);
