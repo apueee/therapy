@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TherapyVisit Pro
 
-## Getting Started
+A therapy-visit documentation and billing system for contract PT/OT/SLP therapy agencies — referral intake, therapist assignment, visit note documentation, scheduling, invoicing, payroll, and compliance. Next.js migration of an original Base44 app, with pixel-perfect UI parity and a real Prisma/Postgres backend replacing Base44's hosted platform.
 
-First, run the development server:
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the system design and [`docs/API.md`](docs/API.md) for the REST API reference.
+
+## Setup
 
 ```bash
+npm install
+cp .env.example .env   # set DATABASE_URL, NEXTAUTH_SECRET, etc.
+npx prisma migrate deploy
+npx prisma db seed     # optional — loads demo data
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Test accounts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+All passwords: `demo123`
 
-## Learn More
+| Email | Role |
+|---|---|
+| `superadmin@therapyvisit.com` | Superuser |
+| `admin@therapyvisit.com` | Admin |
+| `sarah.johnson@therapyvisit.com` | Therapist (PT) |
+| `michael.chen@therapyvisit.com` | Therapist (OT) |
+| `james.rivera@therapyvisit.com` | Therapist (PTA) |
+| `coordinator@therapyvisit.com` | Coordinator |
+| `hr@therapyvisit.com` | HR |
+| `guest@therapyvisit.com` | Guest |
+| `client@therapyvisit.com` | Client |
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Command | Purpose |
+|---|---|
+| `npm run dev` | Dev server (Turbopack) |
+| `npm run build` / `npm run start` | Production build + serve |
+| `npm run lint` / `npm run lint:fix` | ESLint |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm test` | Vitest unit tests |
+| `npm run test:e2e` | Playwright E2E |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Branches
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The backend was built incrementally across `task-1-project-setup` through `task-22-form-components`, a linear chain where each branch wires one domain (patients, therapists, agencies, invoices, ...) to the real database. `task-22-form-components` has everything. `main` is a separate, earlier UI-only scaffold — not part of that chain.
