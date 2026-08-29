@@ -24,6 +24,7 @@ export async function PATCH(
     const { id } = await params;
     const data = await request.json();
     const result = await updateAgency(id, data);
+    if (result?.error) return apiError(result.error, 400);
     return apiSuccess(result);
   } catch (err) {
     return handleApiError(err);
