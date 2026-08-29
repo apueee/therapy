@@ -47,3 +47,7 @@ next-env.d.ts
 # database exports (may contain real patient/visit data)
 /db-export/
 db-export.zip
+
+# user-uploaded files (runtime data, not source)
+/public/uploads/*
+!/public/uploads/.gitkeep
