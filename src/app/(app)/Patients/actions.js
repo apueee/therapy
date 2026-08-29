@@ -5,6 +5,55 @@ import { requireAuth, requireRole } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { headers } from "next/headers";
 import { getClientIp } from "@/lib/audit/logger";
+import { createPatientSchema, updatePatientSchema } from "@/lib/validations/patient";
+
+const upper = (v) => (typeof v === "string" ? v.toUpperCase() : v);
+
+// Builds the object createPatientSchema/updatePatientSchema expect (camelCase,
+// upper-case enums) from the snake_case wire payload. Deliberately excludes
+// `physicians`: the schema models {primary:{name,phone}, referring:{name,phone}}
+// but the data actually persisted/read (see toSnakeCase below) is flat
+// ({primaryName, primaryPhone, referringName, referringPhone}) — the schema
+// doesn't match the real shape, so validating it would either reject valid
+// input or require changing the persisted JSON shape. Left unvalidated,
+// same as before this change, until that's reconciled on its own.
+function toValidationInput(data) {
+  return {
+    firstName: data.first_name,
+    lastName: data.last_name,
+    dateOfBirth: data.date_of_birth || undefined,
+    sex: upper(data.sex),
+    ssnEncrypted: data.ssn,
+    medicareNumber: data.medicare_number,
+    phone: data.phone,
+    email: data.email,
+    address: data.address,
+    city: data.city,
+    state: data.state,
+    zip: data.zip,
+    agencyId: data.agency_id,
+    insurance: data.insurance,
+    coordinatorEmail: data.coordinator_email,
+    certPeriodStart: data.cert_period_start || undefined,
+    certPeriodEnd: data.cert_period_end || undefined,
+    authorizationNumber: data.authorization_number,
+    authorizedVisits:
+      data.authorized_visits !== undefined && data.authorized_visits !== null && data.authorized_visits !== ""
+        ? Number(data.authorized_visits)
+        : undefined,
+    therapyTypes: Array.isArray(data.therapy_types) ? data.therapy_types.map(upper) : undefined,
+    notes: data.notes,
+    status: upper(data.status),
+    responsibleParty:
+      data.responsible_party_name || data.responsible_party_phone
+        ? {
+            name: data.responsible_party_name,
+            phone: data.responsible_party_phone,
+            relationship: data.responsible_party_relationship,
+          }
+        : undefined,
+  };
+}
 
 function toSnakeCase(p) {
   const rp = p.responsibleParty || {};
@@ -105,34 +154,36 @@ export async function getAgenciesForSelect() {
 export async function createPatient(data) {
   const user = await requireRole("SUPERUSER", "ADMIN", "COORDINATOR");
 
+  const parsed = createPatientSchema.safeParse(toValidationInput(data));
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+  const v = parsed.data;
+
   const patient = await prisma.patient.create({
     data: {
-      firstName: data.first_name,
-      lastName: data.last_name,
-      dateOfBirth: data.date_of_birth ? new Date(data.date_of_birth) : null,
-      sex: data.sex?.toUpperCase() || null,
-      medicareNumber: data.medicare_number || null,
-      phone: data.phone || null,
-      email: data.email || null,
-      address: data.address || null,
-      city: data.city || null,
-      state: data.state || null,
-      zip: data.zip || null,
-      agencyId: data.agency_id || null,
-      insurance: data.insurance || null,
-      coordinatorEmail: data.coordinator_email || null,
-      certPeriodStart: data.cert_period_start ? new Date(data.cert_period_start) : null,
-      certPeriodEnd: data.cert_period_end ? new Date(data.cert_period_end) : null,
-      authorizationNumber: data.authorization_number || null,
-      authorizedVisits: data.authorized_visits ? parseInt(data.authorized_visits) : null,
-      therapyTypes: (data.therapy_types || []).map(t => t.toUpperCase()),
-      notes: data.notes || null,
-      status: (data.status || "ACTIVE").toUpperCase(),
-      responsibleParty: (data.responsible_party_name || data.responsible_party_phone) ? {
-        name: data.responsible_party_name || null,
-        phone: data.responsible_party_phone || null,
-        relationship: data.responsible_party_relationship || null,
-      } : null,
+      firstName: v.firstName,
+      lastName: v.lastName,
+      dateOfBirth: v.dateOfBirth ?? null,
+      sex: v.sex ?? null,
+      medicareNumber: v.medicareNumber ?? null,
+      phone: v.phone ?? null,
+      email: v.email ?? null,
+      address: v.address ?? null,
+      city: v.city ?? null,
+      state: v.state ?? null,
+      zip: v.zip ?? null,
+      agencyId: v.agencyId ?? null,
+      insurance: v.insurance ?? null,
+      coordinatorEmail: v.coordinatorEmail ?? null,
+      certPeriodStart: v.certPeriodStart ?? null,
+      certPeriodEnd: v.certPeriodEnd ?? null,
+      authorizationNumber: v.authorizationNumber ?? null,
+      authorizedVisits: v.authorizedVisits ?? null,
+      therapyTypes: v.therapyTypes ?? [],
+      notes: v.notes ?? null,
+      status: v.status ?? "ACTIVE",
+      responsibleParty: v.responsibleParty ?? null,
       physicians: (data.primary_physician || data.referring_physician) ? {
         primaryName: data.primary_physician || null,
         primaryPhone: data.primary_physician_phone || null,
@@ -184,35 +235,35 @@ export async function createPatient(data) {
 export async function updatePatient(id, data) {
   const user = await requireRole("SUPERUSER", "ADMIN", "COORDINATOR");
 
+  const parsed = updatePatientSchema.safeParse(toValidationInput(data));
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+  const v = parsed.data;
+
   await prisma.$transaction(async (tx) => {
     if (data.diagnoses) {
       await tx.patientDiagnosis.deleteMany({ where: { patientId: id } });
     }
 
     const updateData = {};
-    if (data.first_name !== undefined) updateData.firstName = data.first_name;
-    if (data.last_name !== undefined) updateData.lastName = data.last_name;
-    if (data.date_of_birth !== undefined) updateData.dateOfBirth = data.date_of_birth ? new Date(data.date_of_birth) : null;
-    if (data.sex !== undefined) updateData.sex = data.sex?.toUpperCase() || null;
-    if (data.medicare_number !== undefined) updateData.medicareNumber = data.medicare_number || null;
-    if (data.phone !== undefined) updateData.phone = data.phone || null;
-    if (data.email !== undefined) updateData.email = data.email || null;
-    if (data.address !== undefined) updateData.address = data.address || null;
-    if (data.city !== undefined) updateData.city = data.city || null;
-    if (data.state !== undefined) updateData.state = data.state || null;
-    if (data.zip !== undefined) updateData.zip = data.zip || null;
-    if (data.agency_id !== undefined) updateData.agencyId = data.agency_id || null;
-    if (data.insurance !== undefined) updateData.insurance = data.insurance || null;
-    if (data.status !== undefined) updateData.status = data.status.toUpperCase();
-    if (data.therapy_types !== undefined) updateData.therapyTypes = data.therapy_types.map(t => t.toUpperCase());
-    if (data.notes !== undefined) updateData.notes = data.notes || null;
-    if (data.responsible_party_name !== undefined || data.responsible_party_phone !== undefined) {
-      updateData.responsibleParty = {
-        name: data.responsible_party_name || null,
-        phone: data.responsible_party_phone || null,
-        relationship: data.responsible_party_relationship || null,
-      };
-    }
+    if (v.firstName !== undefined) updateData.firstName = v.firstName;
+    if (v.lastName !== undefined) updateData.lastName = v.lastName;
+    if (v.dateOfBirth !== undefined) updateData.dateOfBirth = v.dateOfBirth ?? null;
+    if (v.sex !== undefined) updateData.sex = v.sex ?? null;
+    if (v.medicareNumber !== undefined) updateData.medicareNumber = v.medicareNumber ?? null;
+    if (v.phone !== undefined) updateData.phone = v.phone ?? null;
+    if (v.email !== undefined) updateData.email = v.email ?? null;
+    if (v.address !== undefined) updateData.address = v.address ?? null;
+    if (v.city !== undefined) updateData.city = v.city ?? null;
+    if (v.state !== undefined) updateData.state = v.state ?? null;
+    if (v.zip !== undefined) updateData.zip = v.zip ?? null;
+    if (v.agencyId !== undefined) updateData.agencyId = v.agencyId ?? null;
+    if (v.insurance !== undefined) updateData.insurance = v.insurance ?? null;
+    if (v.status !== undefined) updateData.status = v.status;
+    if (v.therapyTypes !== undefined) updateData.therapyTypes = v.therapyTypes;
+    if (v.notes !== undefined) updateData.notes = v.notes ?? null;
+    if (v.responsibleParty !== undefined) updateData.responsibleParty = v.responsibleParty;
     if (data.primary_physician !== undefined || data.referring_physician !== undefined) {
       updateData.physicians = {
         primaryName: data.primary_physician || null,
