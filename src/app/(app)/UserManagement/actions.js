@@ -6,6 +6,31 @@ import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { logAudit } from "@/lib/audit";
 import { headers } from "next/headers";
 import { getClientIp } from "@/lib/audit/logger";
+import { createUserSchema, updateUserSchema } from "@/lib/validations/user";
+
+const upper = (v) => (typeof v === "string" ? v.toUpperCase() : v);
+
+// inviteUser only ever receives {email, userType} (see route.ts) — createUserSchema
+// also requires password/fullName, which inviteUser never gets (it self-generates
+// the password and doesn't collect a name), so validate against a subset instead
+// of the full schema.
+const inviteUserSchema = createUserSchema.pick({ email: true, userType: true });
+
+// Deliberately excludes `discipline`: the schema's Discipline enum expects
+// short codes (PT/OT/ST), but the UserManagement edit form's discipline <Select>
+// sends the long-form label ("Physical Therapy", ...) and updateUser has
+// always persisted it as-is (unlike Therapists' updateTherapist, which maps
+// through DISCIPLINE_MAP first) — so User.discipline's real stored shape is
+// long-form, not the schema's short-form. Left unvalidated to avoid rejecting
+// currently-working edits.
+function toValidationInput(data) {
+  return {
+    phone: data.phone,
+    userType: data.user_type ? upper(data.user_type) : undefined,
+    credentials: data.credentials,
+    licenseNumber: data.license_number,
+  };
+}
 
 function toSnakeCase(user) {
   return {
@@ -49,7 +74,13 @@ export async function getUsers() {
 export async function inviteUser({ email, userType }) {
   const user = await requireRole("SUPERUSER", "ADMIN");
 
-  const existing = await prisma.user.findUnique({ where: { email } });
+  const parsed = inviteUserSchema.safeParse({ email, userType: upper(userType) });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+  const v = parsed.data;
+
+  const existing = await prisma.user.findUnique({ where: { email: v.email } });
   if (existing) {
     return { error: "A user with this email already exists" };
   }
@@ -68,10 +99,10 @@ export async function inviteUser({ email, userType }) {
 
   await prisma.user.create({
     data: {
-      email,
+      email: v.email,
       passwordHash,
       role: roleMap[userType] ?? "USER",
-      userType: userType.toUpperCase(),
+      userType: v.userType,
     },
   });
 
@@ -90,6 +121,12 @@ export async function inviteUser({ email, userType }) {
 export async function updateUser({ id, data }) {
   const user = await requireRole("SUPERUSER", "ADMIN");
 
+  const parsed = updateUserSchema.safeParse(toValidationInput(data));
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+  const v = parsed.data;
+
   const roleMap = {
     superuser: "SUPERUSER",
     admin: "ADMIN",
@@ -101,13 +138,13 @@ export async function updateUser({ id, data }) {
   };
 
   const updateData = {};
-  if (data.user_type) {
-    updateData.userType = data.user_type.toUpperCase();
+  if (v.userType !== undefined) {
+    updateData.userType = v.userType;
     updateData.role = roleMap[data.user_type] ?? "USER";
   }
-  if (data.phone !== undefined) updateData.phone = data.phone;
-  if (data.credentials !== undefined) updateData.credentials = data.credentials;
-  if (data.license_number !== undefined) updateData.licenseNumber = data.license_number;
+  if (v.phone !== undefined) updateData.phone = v.phone;
+  if (v.credentials !== undefined) updateData.credentials = v.credentials;
+  if (v.licenseNumber !== undefined) updateData.licenseNumber = v.licenseNumber;
   if (data.discipline !== undefined) updateData.discipline = data.discipline || null;
 
   await prisma.user.update({ where: { id }, data: updateData });
