@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useCurrentUser } from "@/components/layout/UserContext";
-import { getDeletionRequests, approveDeletionRequest, rejectDeletionRequest } from "@/app/(app)/Orders/actions";
+import { getDeletionRequests, approveDeletionRequest, rejectDeletionRequest } from "@/lib/api-client/deletion-requests";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
