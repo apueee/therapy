@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCurrentUser } from "@/components/layout/UserContext";
 import { getPatients } from "@/app/(app)/Patients/actions";
 import { getCalendarVisits, getTherapistsForSchedule } from "@/lib/api-client/calendar";
-import { getAssignments } from "@/components/patients/referral-actions";
+import { getAssignments } from "@/lib/api-client/referrals";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";

@@ -19,7 +19,7 @@ import { getPatients } from "@/app/(app)/Patients/actions";
 import { getTherapists } from "@/lib/api-client/therapists";
 import { getCalendarVisits } from "@/lib/api-client/calendar";
 import { getAgencies } from "@/lib/api-client/agencies";
-import { getAssignments } from "@/components/patients/referral-actions";
+import { getAssignments } from "@/lib/api-client/referrals";
 
 export default function AdminDashboard() {
   const [patients, setPatients] = useState([]);

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { UserPlus, Trash2, AlertTriangle, History } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { updateAssignment, deleteAssignment as deleteAssignmentAction } from "@/components/patients/referral-actions";
+import { updateAssignment, deleteAssignment as deleteAssignmentAction } from "@/lib/api-client/referrals";
 
 const therapyColors = {
   "Physical Therapy": "bg-teal-100 text-teal-700",

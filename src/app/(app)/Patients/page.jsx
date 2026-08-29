@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCurrentUser } from "@/components/layout/UserContext";
 import { getPatients, createPatient, updatePatient } from "./actions";
 import { getCalendarVisits } from "@/lib/api-client/calendar";
-import { createReferral, getAssignments } from "@/components/patients/referral-actions";
+import { createReferral, getAssignments } from "@/lib/api-client/referrals";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

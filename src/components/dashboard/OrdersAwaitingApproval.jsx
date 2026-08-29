@@ -11,7 +11,7 @@ import { ClipboardCheck, CheckCircle, Eye, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
 import { toast } from "sonner";
-import { createAssignment } from "@/components/patients/referral-actions";
+import { createAssignment } from "@/lib/api-client/referrals";
 import { saveVisitNote } from "@/app/(app)/VisitNotes/actions";
 
 const therapyColor = {

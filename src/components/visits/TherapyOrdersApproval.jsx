@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, CheckCircle, Clock } from "lucide-react";
-import { getAssignments } from "@/components/patients/referral-actions";
+import { getAssignments } from "@/lib/api-client/referrals";
 
 export default function TherapyOrdersApproval({ visit }) {
   const weeklyVisits = visit?.therapy_orders?.weekly_visits || [];

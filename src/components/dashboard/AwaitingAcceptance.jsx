@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ClipboardList, Check, X, Calendar, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { updateAssignment } from "@/components/patients/referral-actions";
+import { updateAssignment } from "@/lib/api-client/referrals";
 import { saveVisitNote } from "@/app/(app)/VisitNotes/actions";
 
 const therapyColors = {

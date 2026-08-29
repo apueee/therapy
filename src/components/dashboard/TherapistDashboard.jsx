@@ -12,7 +12,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { getPatients } from "@/app/(app)/Patients/actions";
 import { getCalendarVisits } from "@/lib/api-client/calendar";
 import { getTherapistsForSchedule } from "@/lib/api-client/calendar";
-import { getAssignments } from "@/components/patients/referral-actions";
+import { getAssignments } from "@/lib/api-client/referrals";
 
 export default function TherapistDashboard({ user }) {
   const [therapists, setTherapists] = useState([]);

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Clock, Undo2, Trash2 } from "lucide-react";
-import { updateAssignment, deleteAssignment as deleteAssignmentAction } from "@/components/patients/referral-actions";
+import { updateAssignment, deleteAssignment as deleteAssignmentAction } from "@/lib/api-client/referrals";
 
 export default function AdminAwaitingAcceptance({ assignments, onRefresh }) {
   const [recalling, setRecalling] = useState(false);

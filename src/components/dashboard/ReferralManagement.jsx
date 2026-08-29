@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ClipboardCheck, UserCheck, Trash2 } from "lucide-react";
 import { AlertCircle } from "lucide-react";
-import { getAssignments, createAssignment } from "@/components/patients/referral-actions";
+import { getAssignments, createAssignment } from "@/lib/api-client/referrals";
 
 const PTA_COTA = ["PTA", "COTA"];
 
