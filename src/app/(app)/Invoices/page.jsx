@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { getInvoices, createInvoice, updateInvoice, deleteInvoice } from "./actions";
+import { getInvoices, createInvoice, updateInvoice, deleteInvoice } from "@/lib/api-client/invoices";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DollarSign, FileText, Clock, CheckCircle2 } from "lucide-react";
 import { format, subMonths, differenceInDays } from "date-fns";
-import { getInvoices } from "@/app/(app)/Invoices/actions";
+import { getInvoices } from "@/lib/api-client/invoices";
 
 const STATUS_COLORS = {
   draft:        "bg-slate-100 text-slate-600",

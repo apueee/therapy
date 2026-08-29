@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FileText, DollarSign } from "lucide-react";
-import { getAgenciesForInvoice, getCompletedVisitsForInvoice, createInvoice } from "@/app/(app)/Invoices/actions";
+import { getAgenciesForInvoice, getCompletedVisitsForInvoice, createInvoice } from "@/lib/api-client/invoices";
 
 const VISIT_TYPE_LABELS = {
   evaluation: "Evaluation",

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight } from "lucide-react";
-import { getAgenciesForInvoice } from "@/app/(app)/Invoices/actions";
+import { getAgenciesForInvoice } from "@/lib/api-client/invoices";
 
 export default function CreateInvoiceDialog({ open, onOpenChange, onContinue }) {
   const [agencyId, setAgencyId] = useState("");
