@@ -5,6 +5,33 @@ import { requireRole } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { headers } from "next/headers";
 import { getClientIp } from "@/lib/audit/logger";
+import { createTherapistSchema, updateTherapistSchema } from "@/lib/validations/therapist";
+
+const upper = (v) => (typeof v === "string" ? v.toUpperCase() : v);
+
+// Builds the object createTherapistSchema/updateTherapistSchema expect
+// (camelCase, upper-case enums, short-code discipline) from the snake_case
+// wire payload. Deliberately excludes `rates`: the schema models
+// {peds:{eval,returnVisit,...}, geriatrics:{...}} with numeric leaves, but
+// TherapistForm.jsx actually sends a `return_visit` key (not `returnVisit`)
+// and can send "" for an empty rate cell instead of omitting it — neither
+// survives the schema as written, so validating it would reject real,
+// currently-working saves. Left unvalidated, same as before this change,
+// until the schema is reconciled with the real shape.
+function toValidationInput(data) {
+  return {
+    fullName: data.full_name,
+    discipline: DISCIPLINE_MAP[data.discipline] || data.discipline,
+    credentials: data.credentials,
+    licenseNumber: data.license_number,
+    email: data.email,
+    phone: data.phone,
+    hireDate: data.hire_date || undefined,
+    annualReviewDate: data.annual_review_date || undefined,
+    status: data.status ? upper(data.status) : undefined,
+    facilities: data.facilities,
+  };
+}
 
 function toSnakeCase(t) {
   return {
@@ -55,18 +82,24 @@ export async function getTherapistById(id) {
 export async function createTherapist(data) {
   const user = await requireRole("SUPERUSER", "ADMIN", "HR");
 
+  const parsed = createTherapistSchema.safeParse(toValidationInput(data));
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+  const v = parsed.data;
+
   const therapist = await prisma.therapist.create({
     data: {
-      fullName: data.full_name,
-      discipline: DISCIPLINE_MAP[data.discipline] || data.discipline,
-      credentials: data.credentials || null,
-      licenseNumber: data.license_number || null,
-      email: data.email || null,
-      phone: data.phone || null,
-      hireDate: data.hire_date ? new Date(data.hire_date) : null,
-      annualReviewDate: data.annual_review_date ? new Date(data.annual_review_date) : null,
-      status: (data.status || "active").toUpperCase(),
-      facilities: data.facilities || [],
+      fullName: v.fullName,
+      discipline: v.discipline,
+      credentials: v.credentials || null,
+      licenseNumber: v.licenseNumber || null,
+      email: v.email || null,
+      phone: v.phone || null,
+      hireDate: v.hireDate ?? null,
+      annualReviewDate: v.annualReviewDate ?? null,
+      status: v.status || "ACTIVE",
+      facilities: v.facilities || [],
       rates: data.rates || null,
       personalFiles: data.personal_files || null,
       disciplinaryActions: data.disciplinary_actions || null,
@@ -90,17 +123,26 @@ export async function createTherapist(data) {
 export async function updateTherapist(id, data) {
   const user = await requireRole("SUPERUSER", "ADMIN", "HR");
 
+  const parsed = updateTherapistSchema.safeParse(toValidationInput(data));
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+  const v = parsed.data;
+
   const updateData = {};
-  if (data.full_name !== undefined) updateData.fullName = data.full_name;
-  if (data.discipline !== undefined) updateData.discipline = DISCIPLINE_MAP[data.discipline] || data.discipline;
-  if (data.credentials !== undefined) updateData.credentials = data.credentials || null;
-  if (data.license_number !== undefined) updateData.licenseNumber = data.license_number || null;
-  if (data.email !== undefined) updateData.email = data.email || null;
-  if (data.phone !== undefined) updateData.phone = data.phone || null;
-  if (data.hire_date !== undefined) updateData.hireDate = data.hire_date ? new Date(data.hire_date) : null;
-  if (data.annual_review_date !== undefined) updateData.annualReviewDate = data.annual_review_date ? new Date(data.annual_review_date) : null;
-  if (data.status !== undefined) updateData.status = data.status.toUpperCase();
-  if (data.facilities !== undefined) updateData.facilities = data.facilities;
+  if (v.fullName !== undefined) updateData.fullName = v.fullName;
+  if (v.discipline !== undefined) updateData.discipline = v.discipline;
+  if (v.credentials !== undefined) updateData.credentials = v.credentials || null;
+  if (v.licenseNumber !== undefined) updateData.licenseNumber = v.licenseNumber || null;
+  if (v.email !== undefined) updateData.email = v.email || null;
+  if (v.phone !== undefined) updateData.phone = v.phone || null;
+  // Presence-checked against the raw payload: an <input type="date"> can be
+  // cleared to "", which toValidationInput maps away to undefined (so it
+  // passes z.coerce.date()), but that still means "explicitly clear this date".
+  if (data.hire_date !== undefined) updateData.hireDate = v.hireDate ?? null;
+  if (data.annual_review_date !== undefined) updateData.annualReviewDate = v.annualReviewDate ?? null;
+  if (v.status !== undefined) updateData.status = v.status;
+  if (v.facilities !== undefined) updateData.facilities = v.facilities;
   if (data.rates !== undefined) updateData.rates = data.rates;
   if (data.personal_files !== undefined) updateData.personalFiles = data.personal_files;
   if (data.disciplinary_actions !== undefined) updateData.disciplinaryActions = data.disciplinary_actions;
