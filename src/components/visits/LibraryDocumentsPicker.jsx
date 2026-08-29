@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getDocuments } from "@/app/(app)/DocumentLibrary/actions";
+import { getDocuments } from "@/lib/api-client/documents";
 
 export default function LibraryDocumentsPicker({ selected, onChange }) {
   const [docs, setDocs] = useState([]);

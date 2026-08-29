@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useCurrentUser } from "@/components/layout/UserContext";
-import { getDocuments, createDocument, updateDocument, deleteDocument } from "./actions";
+import { getDocuments, createDocument, updateDocument, deleteDocument } from "@/lib/api-client/documents";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
