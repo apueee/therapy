@@ -1,17 +1,45 @@
 "use client";
 
-import { useActionState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Activity } from "lucide-react";
-import { loginAction } from "./actions";
-
-const initialState = { error: null };
 
 export function LoginForm() {
-  const [state, formAction, isPending] = useActionState(loginAction, initialState);
+  const [error, setError] = useState(null);
+  const [isPending, setIsPending] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setIsPending(true);
+
+    const formData = new FormData(e.target);
+    try {
+      const res = await fetch("/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.get("email"),
+          password: formData.get("password"),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "An authentication error occurred");
+        setIsPending(false);
+        return;
+      }
+      // Full reload so the new session cookie is picked up everywhere
+      // (matches the original signIn({ redirectTo: "/" }) behavior).
+      window.location.href = "/";
+    } catch {
+      setError("An authentication error occurred");
+      setIsPending(false);
+    }
+  };
 
   return (
     <Card className="w-full max-w-md border-slate-100">
@@ -24,10 +52,10 @@ export function LoginForm() {
           <p className="text-sm text-slate-400 mt-1">Visit Documentation</p>
         </div>
 
-        <form action={formAction} className="space-y-4">
-          {state.error && (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
             <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
-              {state.error}
+              {error}
             </div>
           )}
           <div className="space-y-2">
