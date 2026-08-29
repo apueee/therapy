@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Plus, X } from "lucide-react";
-import { getAgenciesForSelect } from "@/app/(app)/Patients/actions";
+import { getAgenciesForSelect } from "@/lib/api-client/patients";
 
 const THERAPY_TYPES = ["Physical Therapy", "Occupational Therapy", "Speech Therapy"];
 

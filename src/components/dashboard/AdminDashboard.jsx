@@ -15,7 +15,7 @@ import ReferralManagement from "@/components/dashboard/ReferralManagement";
 import AdminAwaitingAcceptance from "@/components/dashboard/AdminAwaitingAcceptance";
 import OrdersAwaitingApproval from "@/components/dashboard/OrdersAwaitingApproval";
 import AwaitingAssignment from "@/components/dashboard/AwaitingAssignment";
-import { getPatients } from "@/app/(app)/Patients/actions";
+import { getPatients } from "@/lib/api-client/patients";
 import { getTherapists } from "@/lib/api-client/therapists";
 import { getCalendarVisits } from "@/lib/api-client/calendar";
 import { getAgencies } from "@/lib/api-client/agencies";

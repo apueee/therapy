@@ -5,7 +5,7 @@ import { FileText, Calendar, Activity } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { getPatients } from "@/app/(app)/Patients/actions";
+import { getPatients } from "@/lib/api-client/patients";
 import { getCalendarVisits } from "@/lib/api-client/calendar";
 
 const therapyColors = {

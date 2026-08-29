@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Save, Calendar, Search, X } from "lucide-react";
-import { getAgenciesForSelect, getPatients } from "@/app/(app)/Patients/actions";
+import { getAgenciesForSelect, getPatients } from "@/lib/api-client/patients";
 import { getTherapists } from "@/lib/api-client/therapists";
 
 export default function ReferralIntakeForm({ onSave }) {

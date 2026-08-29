@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { getPatientById } from "@/app/(app)/Patients/actions";
+import { getPatientById } from "@/lib/api-client/patients";
 import { getPatientVisits } from "@/app/(app)/VisitNotes/actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

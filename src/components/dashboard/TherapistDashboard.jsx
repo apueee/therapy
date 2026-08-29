@@ -9,7 +9,7 @@ import StatCard from "@/components/dashboard/StatCard";
 import RecentVisits from "@/components/dashboard/RecentVisits";
 import AwaitingAcceptance from "@/components/dashboard/AwaitingAcceptance";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { getPatients } from "@/app/(app)/Patients/actions";
+import { getPatients } from "@/lib/api-client/patients";
 import { getCalendarVisits } from "@/lib/api-client/calendar";
 import { getTherapistsForSchedule } from "@/lib/api-client/calendar";
 import { getAssignments } from "@/lib/api-client/referrals";

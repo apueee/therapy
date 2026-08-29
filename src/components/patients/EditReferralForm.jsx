@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Edit, X } from "lucide-react";
-import { getAgenciesForSelect, getPatients } from "@/app/(app)/Patients/actions";
+import { getAgenciesForSelect, getPatients } from "@/lib/api-client/patients";
 
 export default function EditReferralForm({ onUpdate, preselectedPatientId }) {
   const [searchQuery, setSearchQuery] = useState("");

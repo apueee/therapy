@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useCurrentUser } from "@/components/layout/UserContext";
-import { getPatients } from "@/app/(app)/Patients/actions";
+import { getPatients } from "@/lib/api-client/patients";
 import { getCalendarVisits, getTherapistsForSchedule } from "@/lib/api-client/calendar";
 import { getAssignments } from "@/lib/api-client/referrals";
 import { Input } from "@/components/ui/input";
