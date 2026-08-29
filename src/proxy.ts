@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth/config";
 import { NextResponse } from "next/server";
 
-export default auth((req) => {
+const proxy = auth((req) => {
   const isLoggedIn = !!req.auth?.user;
   const { pathname } = req.nextUrl;
 
@@ -20,6 +20,8 @@ export default auth((req) => {
 
   return NextResponse.next();
 });
+
+export default proxy;
 
 export const config = {
   matcher: [
