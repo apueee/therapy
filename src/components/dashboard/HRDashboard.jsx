@@ -9,7 +9,7 @@ import Link from "next/link";
 import { formatDistanceToNow, format } from "date-fns";
 import ClockInOut from "@/components/coordinator/ClockInOut";
 import { getTherapists } from "@/lib/api-client/therapists";
-import { getNotifications, markNotificationRead, markAllNotificationsRead } from "@/components/dashboard/dashboard-actions";
+import { getNotifications, markNotificationRead, markAllNotificationsRead } from "@/lib/api-client/notifications";
 
 const typeStyles = {
   hr_alert: { bg: "bg-indigo-50", border: "border-indigo-200", icon: <AlertTriangle className="w-4 h-4 text-indigo-500" />, badge: "bg-indigo-100 text-indigo-700" },
