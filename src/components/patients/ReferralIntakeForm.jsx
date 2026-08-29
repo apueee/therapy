@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Save, Calendar, Search, X } from "lucide-react";
 import { getAgenciesForSelect, getPatients } from "@/app/(app)/Patients/actions";
-import { getTherapists } from "@/app/(app)/Therapists/actions";
+import { getTherapists } from "@/lib/api-client/therapists";
 
 export default function ReferralIntakeForm({ onSave }) {
   const [form, setForm] = useState({

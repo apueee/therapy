@@ -10,7 +10,7 @@ import RecentVisits from "@/components/dashboard/RecentVisits";
 import TherapyBreakdown from "@/components/dashboard/TherapyBreakdown";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { getPatients } from "@/app/(app)/Patients/actions";
-import { getTherapists } from "@/app/(app)/Therapists/actions";
+import { getTherapists } from "@/lib/api-client/therapists";
 import { getCalendarVisits } from "@/app/(app)/VisitCalendar/actions";
 import { getAgencies } from "@/lib/api-client/agencies";
 import { getUsers } from "@/app/(app)/UserManagement/actions";

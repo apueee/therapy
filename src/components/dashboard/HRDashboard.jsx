@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { formatDistanceToNow, format } from "date-fns";
 import ClockInOut from "@/components/coordinator/ClockInOut";
-import { getTherapists } from "@/app/(app)/Therapists/actions";
+import { getTherapists } from "@/lib/api-client/therapists";
 import { getNotifications, markNotificationRead, markAllNotificationsRead } from "@/components/dashboard/dashboard-actions";
 
 const typeStyles = {

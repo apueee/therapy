@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { getTherapists, createTherapist, updateTherapist, deleteTherapist } from "./actions";
+import { getTherapists, createTherapist, updateTherapist, deleteTherapist } from "@/lib/api-client/therapists";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
