@@ -7,14 +7,16 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the system design and [`d
 ## Setup
 
 ```bash
-npm install
-cp .env.example .env   # set DATABASE_URL, NEXTAUTH_SECRET, etc.
+npm install             # also runs `prisma generate` via postinstall
+cp .env.example .env     # set DATABASE_URL, AUTH_SECRET, AUTH_URL
 npx prisma migrate deploy
-npx prisma db seed     # optional — loads demo data
+npx prisma db seed      # optional — loads demo data
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+> **Seeing `Module not found: Can't resolve '@/generated/prisma/client'`?** Prisma's generated client lives at `src/generated/prisma/` (a custom output path — see `prisma/schema.prisma`), which is gitignored like any other build artifact. `npm install` regenerates it automatically via `postinstall`; if you skipped a full `npm install` (e.g. only ran `npm ci --omit=optional` or copied `node_modules` from elsewhere), run `npx prisma generate` manually.
 
 ## Test accounts
 
@@ -38,10 +40,12 @@ All passwords: `demo123`
 |---|---|
 | `npm run dev` | Dev server (Turbopack) |
 | `npm run build` / `npm run start` | Production build + serve |
-| `npm run lint` / `npm run lint:fix` | ESLint |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm test` | Vitest unit tests |
-| `npm run test:e2e` | Playwright E2E |
+| `npm run lint` | ESLint |
+| `npm test` / `npm run test:watch` / `npm run test:coverage` | Vitest unit tests |
+| `npx tsc --noEmit` | Type check |
+| `npx prisma generate` | Regenerate the Prisma client (auto-runs on `npm install` via `postinstall`) |
+| `npx prisma migrate deploy` | Apply pending migrations |
+| `npx prisma db seed` | Load demo data |
 
 ## Branches
 
