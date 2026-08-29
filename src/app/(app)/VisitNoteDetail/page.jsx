@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useCurrentUser } from "@/components/layout/UserContext";
-import { getVisitNoteById, updateVisitNoteField, getPatientVisits } from "@/app/(app)/VisitNotes/actions";
+import { getVisitNoteById, updateVisitNoteField, getPatientVisits } from "@/lib/api-client/visit-notes";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";

@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import VisitNoteForm from "@/components/visits/VisitNoteForm";
-import { getVisitFormData, saveVisitNote } from "@/app/(app)/VisitNotes/actions";
+import { getVisitFormData, saveVisitNote } from "@/lib/api-client/visit-notes";
 import { toast } from "sonner";
 
 export default function NewVisitNote() {

@@ -12,7 +12,7 @@ import { ClipboardList, Check, X, Calendar, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { updateAssignment } from "@/lib/api-client/referrals";
-import { saveVisitNote } from "@/app/(app)/VisitNotes/actions";
+import { saveVisitNote } from "@/lib/api-client/visit-notes";
 
 const therapyColors = {
   "Physical Therapy": "bg-teal-100 text-teal-700",

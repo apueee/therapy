@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useCurrentUser } from "@/components/layout/UserContext";
-import { getVisitNotes, deleteVisitNote } from "./actions";
+import { getVisitNotes, deleteVisitNote } from "@/lib/api-client/visit-notes";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";

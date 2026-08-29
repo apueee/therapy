@@ -12,7 +12,7 @@ import { format } from "date-fns";
 import Link from "next/link";
 import { toast } from "sonner";
 import { createAssignment } from "@/lib/api-client/referrals";
-import { saveVisitNote } from "@/app/(app)/VisitNotes/actions";
+import { saveVisitNote } from "@/lib/api-client/visit-notes";
 
 const therapyColor = {
   "Physical Therapy": "bg-blue-100 text-blue-700",
