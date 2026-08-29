@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useCurrentUser } from "@/components/layout/UserContext";
-import { getTasks, createTask, updateTaskStatus, deleteTask, getUsersForSelect } from "./actions";
+import { getTasks, createTask, updateTaskStatus, deleteTask, getUsersForSelect } from "@/lib/api-client/tasks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -165,7 +165,7 @@ export default function TaskAssignment() {
                         <span className="flex items-center gap-1"><User className="w-3 h-3" />{task.assigned_to_name}</span>
                       )}
                       {task.due_date && (
-                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{format(new Date(task.due_date + "T00:00:00"), "MMM d, yyyy")}</span>
+                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{format(new Date(task.due_date), "MMM d, yyyy")}</span>
                       )}
                     </div>
                   </div>

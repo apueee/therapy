@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useCurrentUser } from "@/components/layout/UserContext";
-import { getMyTasks, updateTaskStatus } from "@/app/(app)/TaskAssignment/actions";
+import { getMyTasks, updateTaskStatus } from "@/lib/api-client/tasks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
