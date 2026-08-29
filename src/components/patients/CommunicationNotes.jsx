@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { getCommunicationNotes, addCommunicationNote } from "./communication-actions";
+import { getCommunicationNotes, addCommunicationNote } from "@/lib/api-client/communication-notes";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
