@@ -1,19 +1,19 @@
-import { handleResponse } from "./_fetch";
+import { apiUrl, handleResponse } from "./_fetch";
 
 export async function getTasks() {
-  const res = await fetch("/api/v1/tasks");
+  const res = await fetch(apiUrl("/api/v1/tasks"));
   return handleResponse(res);
 }
 
 // The REST endpoint always scopes to the authenticated session — any
 // email argument is accepted (to match existing call sites) but ignored.
 export async function getMyTasks(_email?: string) {
-  const res = await fetch("/api/v1/tasks/mine");
+  const res = await fetch(apiUrl("/api/v1/tasks/mine"));
   return handleResponse(res);
 }
 
 export async function createTask(data: unknown) {
-  const res = await fetch("/api/v1/tasks", {
+  const res = await fetch(apiUrl("/api/v1/tasks"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -22,7 +22,7 @@ export async function createTask(data: unknown) {
 }
 
 export async function updateTask(id: string, data: unknown) {
-  const res = await fetch(`/api/v1/tasks/${id}`, {
+  const res = await fetch(apiUrl(`/api/v1/tasks/${id}`), {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -54,7 +54,7 @@ export async function escalateTask(data: {
   createdByName?: string;
 }) {
   const { taskId, escalatedTo, escalatedToName, reason, followUpDate } = data;
-  const res = await fetch(`/api/v1/tasks/${taskId}/escalate`, {
+  const res = await fetch(apiUrl(`/api/v1/tasks/${taskId}/escalate`), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ escalatedTo, escalatedToName, reason, followUpDate }),
@@ -63,11 +63,11 @@ export async function escalateTask(data: {
 }
 
 export async function deleteTask(id: string) {
-  const res = await fetch(`/api/v1/tasks/${id}`, { method: "DELETE" });
+  const res = await fetch(apiUrl(`/api/v1/tasks/${id}`), { method: "DELETE" });
   return handleResponse(res);
 }
 
 export async function getUsersForSelect() {
-  const res = await fetch("/api/v1/users/for-select");
+  const res = await fetch(apiUrl("/api/v1/users/for-select"));
   return handleResponse(res);
 }

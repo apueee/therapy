@@ -1,12 +1,12 @@
-import { handleResponse } from "./_fetch";
+import { apiUrl, handleResponse } from "./_fetch";
 
 export async function getVisitNotes() {
-  const res = await fetch("/api/v1/visit-notes");
+  const res = await fetch(apiUrl("/api/v1/visit-notes"));
   return handleResponse(res);
 }
 
 export async function getVisitNoteById(id: string) {
-  const res = await fetch(`/api/v1/visit-notes/${id}`);
+  const res = await fetch(apiUrl(`/api/v1/visit-notes/${id}`));
   return handleResponse(res);
 }
 
@@ -16,14 +16,14 @@ export async function getVisitNoteById(id: string) {
 export async function saveVisitNote(data: { id?: string; [key: string]: unknown }) {
   const { id, ...rest } = data;
   if (!id) {
-    const res = await fetch("/api/v1/visit-notes", {
+    const res = await fetch(apiUrl("/api/v1/visit-notes"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(rest),
     });
     return handleResponse(res);
   }
-  const res = await fetch(`/api/v1/visit-notes/${id}`, {
+  const res = await fetch(apiUrl(`/api/v1/visit-notes/${id}`), {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(rest),
@@ -32,7 +32,7 @@ export async function saveVisitNote(data: { id?: string; [key: string]: unknown 
 }
 
 export async function updateVisitNoteField(id: string, field: string, value: unknown) {
-  const res = await fetch(`/api/v1/visit-notes/${id}/field`, {
+  const res = await fetch(apiUrl(`/api/v1/visit-notes/${id}/field`), {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ field, value }),
@@ -41,16 +41,16 @@ export async function updateVisitNoteField(id: string, field: string, value: unk
 }
 
 export async function deleteVisitNote(id: string) {
-  const res = await fetch(`/api/v1/visit-notes/${id}`, { method: "DELETE" });
+  const res = await fetch(apiUrl(`/api/v1/visit-notes/${id}`), { method: "DELETE" });
   return handleResponse(res);
 }
 
 export async function getPatientVisits(patientId: string) {
-  const res = await fetch(`/api/v1/patients/${patientId}/visits`);
+  const res = await fetch(apiUrl(`/api/v1/patients/${patientId}/visits`));
   return handleResponse(res);
 }
 
 export async function getVisitFormData() {
-  const res = await fetch("/api/v1/visit-notes/form-data");
+  const res = await fetch(apiUrl("/api/v1/visit-notes/form-data"));
   return handleResponse(res);
 }

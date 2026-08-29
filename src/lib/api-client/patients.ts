@@ -1,17 +1,17 @@
-import { handleResponse } from "./_fetch";
+import { apiUrl, handleResponse } from "./_fetch";
 
 export async function getPatients() {
-  const res = await fetch("/api/v1/patients");
+  const res = await fetch(apiUrl("/api/v1/patients"));
   return handleResponse(res);
 }
 
 export async function getPatientById(id: string) {
-  const res = await fetch(`/api/v1/patients/${id}`);
+  const res = await fetch(apiUrl(`/api/v1/patients/${id}`));
   return handleResponse(res);
 }
 
 export async function createPatient(data: unknown) {
-  const res = await fetch("/api/v1/patients", {
+  const res = await fetch(apiUrl("/api/v1/patients"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -20,7 +20,7 @@ export async function createPatient(data: unknown) {
 }
 
 export async function updatePatient(id: string, data: unknown) {
-  const res = await fetch(`/api/v1/patients/${id}`, {
+  const res = await fetch(apiUrl(`/api/v1/patients/${id}`), {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -29,11 +29,11 @@ export async function updatePatient(id: string, data: unknown) {
 }
 
 export async function deletePatient(id: string) {
-  const res = await fetch(`/api/v1/patients/${id}`, { method: "DELETE" });
+  const res = await fetch(apiUrl(`/api/v1/patients/${id}`), { method: "DELETE" });
   return handleResponse(res);
 }
 
 export async function getAgenciesForSelect() {
-  const res = await fetch("/api/v1/patients/agencies-for-select");
+  const res = await fetch(apiUrl("/api/v1/patients/agencies-for-select"));
   return handleResponse(res);
 }

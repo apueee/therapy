@@ -1,12 +1,12 @@
-import { handleResponse } from "./_fetch";
+import { apiUrl, handleResponse } from "./_fetch";
 
 export async function getInvoices() {
-  const res = await fetch("/api/v1/invoices");
+  const res = await fetch(apiUrl("/api/v1/invoices"));
   return handleResponse(res);
 }
 
 export async function createInvoice(data: unknown) {
-  const res = await fetch("/api/v1/invoices", {
+  const res = await fetch(apiUrl("/api/v1/invoices"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -15,7 +15,7 @@ export async function createInvoice(data: unknown) {
 }
 
 export async function updateInvoice(id: string, data: unknown) {
-  const res = await fetch(`/api/v1/invoices/${id}`, {
+  const res = await fetch(apiUrl(`/api/v1/invoices/${id}`), {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -24,16 +24,16 @@ export async function updateInvoice(id: string, data: unknown) {
 }
 
 export async function deleteInvoice(id: string) {
-  const res = await fetch(`/api/v1/invoices/${id}`, { method: "DELETE" });
+  const res = await fetch(apiUrl(`/api/v1/invoices/${id}`), { method: "DELETE" });
   return handleResponse(res);
 }
 
 export async function getAgenciesForInvoice() {
-  const res = await fetch("/api/v1/invoices/agencies");
+  const res = await fetch(apiUrl("/api/v1/invoices/agencies"));
   return handleResponse(res);
 }
 
 export async function getCompletedVisitsForInvoice() {
-  const res = await fetch("/api/v1/invoices/completed-visits");
+  const res = await fetch(apiUrl("/api/v1/invoices/completed-visits"));
   return handleResponse(res);
 }

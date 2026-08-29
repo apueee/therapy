@@ -1,13 +1,13 @@
-import { handleResponse } from "./_fetch";
+import { apiUrl, handleResponse } from "./_fetch";
 
 export async function getCompanyInfo() {
-  const res = await fetch("/api/v1/company-info");
+  const res = await fetch(apiUrl("/api/v1/company-info"));
   if (res.status === 404) return null;
   return handleResponse(res);
 }
 
 export async function saveCompanyInfo(data: unknown) {
-  const res = await fetch("/api/v1/company-info", {
+  const res = await fetch(apiUrl("/api/v1/company-info"), {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -16,7 +16,7 @@ export async function saveCompanyInfo(data: unknown) {
 }
 
 export async function saveMenuPermissions(permissions: unknown) {
-  const res = await fetch("/api/v1/company-info/menu-permissions", {
+  const res = await fetch(apiUrl("/api/v1/company-info/menu-permissions"), {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(permissions),
