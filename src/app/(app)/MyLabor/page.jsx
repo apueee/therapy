@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useCurrentUser } from "@/components/layout/UserContext";
-import { getTimeLogs } from "./actions";
+import { getTimeLogs } from "@/lib/api-client/time-logs";
 import ClockInOut from "@/components/coordinator/ClockInOut";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

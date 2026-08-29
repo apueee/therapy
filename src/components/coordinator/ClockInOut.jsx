@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useCurrentUser } from "@/components/layout/UserContext";
-import { getTimeLogs, clockIn, clockOut } from "@/app/(app)/MyLabor/actions";
+import { getTimeLogs, clockIn, clockOut } from "@/lib/api-client/time-logs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
