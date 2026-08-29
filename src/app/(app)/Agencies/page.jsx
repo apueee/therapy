@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { getAgencies, createAgency, updateAgency, deleteAgency } from "./actions";
+import { getAgencies, createAgency, updateAgency, deleteAgency } from "@/lib/api-client/agencies";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";

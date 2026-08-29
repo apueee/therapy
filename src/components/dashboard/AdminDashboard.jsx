@@ -18,7 +18,7 @@ import AwaitingAssignment from "@/components/dashboard/AwaitingAssignment";
 import { getPatients } from "@/app/(app)/Patients/actions";
 import { getTherapists } from "@/app/(app)/Therapists/actions";
 import { getCalendarVisits } from "@/app/(app)/VisitCalendar/actions";
-import { getAgencies } from "@/app/(app)/Agencies/actions";
+import { getAgencies } from "@/lib/api-client/agencies";
 import { getAssignments } from "@/components/patients/referral-actions";
 
 export default function AdminDashboard() {

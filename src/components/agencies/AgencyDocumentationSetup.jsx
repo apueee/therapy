@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus, X, Save, ChevronDown, ChevronUp, GripVertical, FileText } from "lucide-react";
 import { toast } from "sonner";
-import { updateAgency } from "@/app/(app)/Agencies/actions";
+import { updateAgency } from "@/lib/api-client/agencies";
 
 const FIELD_TYPES = [
   { value: "text", label: "Text" },
