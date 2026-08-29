@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useCurrentUser } from "@/components/layout/UserContext";
-import { getCompanyInfo, saveMenuPermissions } from "@/app/(app)/CompanyInformation/actions";
+import { getCompanyInfo, saveMenuPermissions } from "@/lib/api-client/company-info";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

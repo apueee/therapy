@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useCurrentUser } from "@/components/layout/UserContext";
-import { getCompanyInfo, saveCompanyInfo } from "./actions";
+import { getCompanyInfo, saveCompanyInfo } from "@/lib/api-client/company-info";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, Phone, Mail, MapPin, Edit, Save, X, Upload } from "lucide-react";
